@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8fb;
+  --foreground: #17191f;
+  --muted: #667085;
+  --line: #d9dee8;
+  --panel: #ffffff;
+  --brand: #1877f2;
+  --brand-dark: #0d5dc8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(24, 119, 242, 0.28);
+  outline-offset: 2px;
+}
+
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #aeb7c7 transparent;
+}
