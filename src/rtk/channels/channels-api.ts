@@ -4,10 +4,15 @@ import { skipToken } from "@reduxjs/toolkit/query";
 import { baseApi } from "@/rtk/base-api";
 import {
   normalizeChannel,
-  normalizeChannelMessages,
+  normalizeChannelMessagePage,
   normalizeChannels,
 } from "@/lib/normalizers";
-import type { Channel, ChannelMessage } from "@/types/domain";
+import type { Channel, ChannelMessagePage } from "@/types/domain";
+
+export type ChannelMessagesQueryArgs = {
+  slug: string;
+  cursor?: string | null;
+};
 
 function unwrapChannelResponse(response: unknown): unknown {
   if (typeof response !== "object" || response === null || Array.isArray(response)) {
@@ -54,10 +59,16 @@ export const channelsApi = baseApi.injectEndpoints({
       transformResponse: (response: unknown) => normalizeOptionalChannel(response),
       providesTags: (_result, _error, slug) => [{ type: "Channel", id: slug }],
     }),
-    channelMessages: builder.query<ChannelMessage[], string>({
-      query: (slug) => `/channels/${slug}/messages?limit=50`,
-      transformResponse: (response: unknown) => normalizeChannelMessages(response),
-      providesTags: (_result, _error, slug) => [
+    channelMessages: builder.query<ChannelMessagePage, ChannelMessagesQueryArgs>({
+      query: ({ slug, cursor }) => {
+        const params = new URLSearchParams({ limit: "50" });
+        if (cursor) {
+          params.set("cursor", cursor);
+        }
+        return `/channels/${slug}/messages?${params.toString()}`;
+      },
+      transformResponse: (response: unknown) => normalizeChannelMessagePage(response),
+      providesTags: (_result, _error, { slug }) => [
         { type: "ChannelMessages", id: slug },
       ],
     }),
@@ -69,6 +80,7 @@ export const {
   useChannelQuery,
   useChannelsQuery,
   useDefaultChannelQuery,
+  useLazyChannelMessagesQuery,
 } = channelsApi;
 
 export function useChannels() {
@@ -83,6 +95,8 @@ export function useChannel(slug?: string) {
   return useChannelQuery(slug ?? skipToken);
 }
 
-export function useChannelMessages(slug?: string) {
-  return useChannelMessagesQuery(slug ?? skipToken);
+export function useChannelMessages(slug?: string, cursor?: string | null) {
+  return useChannelMessagesQuery(
+    slug ? { slug, cursor: cursor ?? null } : skipToken,
+  );
 }

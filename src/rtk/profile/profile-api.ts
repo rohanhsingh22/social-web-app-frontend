@@ -13,6 +13,12 @@ export type ProfileUpdateInput = {
   region?: string;
   city?: string;
   gender?: string;
+  characterConfig?: {
+    gender?: "male" | "female";
+    skinColor?: string;
+    hairColor?: string;
+    outfitColor?: string;
+  };
   primaryLanguage?: string;
   languages?: string[];
 };

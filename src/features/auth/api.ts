@@ -1,5 +1,6 @@
 export {
   authApi,
+  useAuthProvidersQuery,
   useAuthSession,
   useAuthSessionQuery,
   useLogout,

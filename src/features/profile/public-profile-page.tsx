@@ -1,10 +1,14 @@
 "use client";
 
-import { Avatar } from "@/components/common/avatar";
+import { Globe, MapPin, MessageSquare, Shield } from "lucide-react";
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import { usePublicProfile } from "@/features/profile/api";
+import { Button } from "@/components/ui/button";
+import { CharacterScene } from "@/components/character/character-scene";
+import { ProfileStatsCard } from "@/components/profile/profile-stats-card";
+import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
 
 export function PublicProfilePage({ username }: { username: string }) {
   const authQuery = useAuthSession();
@@ -14,10 +18,8 @@ export function PublicProfilePage({ username }: { username: string }) {
   if (authQuery.isLoading) {
     return (
       <AppShell>
-        <section className="mx-auto max-w-3xl px-4 py-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600">
-            Checking session...
-          </div>
+        <section className="grid h-full place-items-center px-4">
+          <div className="text-sm text-ink-muted">Loading...</div>
         </section>
       </AppShell>
     );
@@ -28,7 +30,7 @@ export function PublicProfilePage({ username }: { username: string }) {
       <AppShell>
         <LockedPanel
           title="Login required"
-          message={`Login with Facebook to view @${username}'s public profile and connection status.`}
+          message={`Login with Facebook to view @${username}'s profile.`}
         />
       </AppShell>
     );
@@ -37,10 +39,8 @@ export function PublicProfilePage({ username }: { username: string }) {
   if (profileQuery.isLoading || !profileQuery.data) {
     return (
       <AppShell>
-        <section className="mx-auto max-w-3xl px-4 py-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600">
-            Loading public profile...
-          </div>
+        <section className="grid h-full place-items-center px-4">
+          <div className="text-sm text-ink-muted">Loading character...</div>
         </section>
       </AppShell>
     );
@@ -50,36 +50,137 @@ export function PublicProfilePage({ username }: { username: string }) {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-3xl px-4 py-6">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-start gap-4">
-            <Avatar user={profile} size="lg" />
+      <section className="showcase-layout relative h-full w-full overflow-hidden">
+        {/* Full-screen character scene as background */}
+        <div className="absolute inset-0">
+          <CharacterScene config={profile.characterConfig} />
+        </div>
+
+        {/* Top gradient overlay for header readability */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 to-transparent" />
+
+        {/* Bottom gradient overlay */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
+
+        {/* Header */}
+        <header className="showcase-header absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 lg:p-6">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <ShowcaseAvatar
+              src={profile.avatarUrl}
+              alt={profile.displayName}
+              width={56}
+              height={56}
+            />
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-semibold text-slate-950">
+              <h1 className="truncate text-xl font-bold text-white drop-shadow-lg lg:text-2xl">
                 {profile.displayName}
               </h1>
-              <p className="text-sm text-slate-500">@{profile.username}</p>
+              <p className="flex items-center gap-1.5 text-sm text-white/60">
+                <span className="truncate">@{profile.username}</span>
+                {profile.role && profile.role !== "user" && (
+                  <span className="inline-flex items-center gap-1 rounded bg-brand/30 px-1.5 py-0.5 text-[10px] font-semibold text-brand backdrop-blur-sm">
+                    <Shield className="h-3 w-3" aria-hidden />
+                    {profile.role}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
-          <p className="mt-5 text-sm leading-6 text-slate-700">
-            {profile.bio || "No bio added yet."}
-          </p>
-          <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="font-semibold text-slate-950">Age group</dt>
-              <dd className="mt-1 text-slate-600">{profile.ageGroup || "Not shown"}</dd>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              className="bg-brand hover:bg-brand-hover"
+            >
+              Connect
+            </Button>
+          </div>
+        </header>
+
+        {/* Stats panel — right side on desktop */}
+        <aside className="showcase-stats absolute bottom-20 right-4 z-10 hidden w-72 flex-col gap-2 lg:bottom-24 lg:flex lg:p-6">
+          {profile.ageGroup ? (
+            <ProfileStatsCard
+              icon={Shield}
+              label="Age Group"
+              value={profile.ageGroup}
+            />
+          ) : null}
+          {profile.region ? (
+            <ProfileStatsCard
+              icon={MapPin}
+              label="Location"
+              value={
+                profile.city
+                  ? `${profile.city}, ${profile.region}`
+                  : profile.region
+              }
+            />
+          ) : null}
+          {profile.languages.length > 0 && (
+            <ProfileStatsCard
+              icon={Globe}
+              label="Languages"
+              value={profile.languages.join(", ")}
+            />
+          )}
+          {profile.bio && (
+            <ProfileStatsCard
+              icon={MessageSquare}
+              label="Bio"
+              value={profile.bio}
+              fallback=""
+            />
+          )}
+        </aside>
+
+        {/* Mobile stats — horizontal scroll at bottom */}
+        <div className="absolute inset-x-0 bottom-20 z-10 flex gap-2 overflow-x-auto px-4 pb-2 lg:hidden">
+          {profile.ageGroup && (
+            <div className="shrink-0">
+              <ProfileStatsCard
+                icon={Shield}
+                label="Age"
+                value={profile.ageGroup}
+              />
             </div>
-            <div>
-              <dt className="font-semibold text-slate-950">Region</dt>
-              <dd className="mt-1 text-slate-600">{profile.region || "Not shown"}</dd>
+          )}
+          {profile.region && (
+            <div className="shrink-0">
+              <ProfileStatsCard
+                icon={MapPin}
+                label="Region"
+                value={profile.region}
+              />
             </div>
-            <div>
-              <dt className="font-semibold text-slate-950">Languages</dt>
-              <dd className="mt-1 text-slate-600">
-                {profile.languages.length ? profile.languages.join(", ") : "Not shown"}
-              </dd>
+          )}
+          {profile.languages.length > 0 && (
+            <div className="shrink-0">
+              <ProfileStatsCard
+                icon={Globe}
+                label="Languages"
+                value={profile.languages.join(", ")}
+              />
             </div>
-          </dl>
+          )}
+        </div>
+
+        {/* Action bar */}
+        <div className="showcase-actions absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-3 p-4 lg:justify-start lg:p-6">
+          <Button
+            type="button"
+            size="lg"
+            className="bg-brand shadow-lg shadow-brand/30 hover:bg-brand-hover"
+          >
+            Connect
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+          >
+            Message
+          </Button>
         </div>
       </section>
     </AppShell>

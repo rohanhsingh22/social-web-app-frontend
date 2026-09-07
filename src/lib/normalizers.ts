@@ -1,4 +1,14 @@
-import type { AuthSession, Channel, ChannelMessage, Profile, UserSummary } from "@/types/domain";
+import type {
+  AuthSession,
+  Channel,
+  ChannelMessage,
+  ChannelMessagePage,
+  CharacterConfig,
+  PageInfo,
+  Profile,
+  UserSummary,
+} from "@/types/domain";
+import { DEFAULT_CHARACTER_CONFIG } from "@/types/domain";
 
 type ApiRecord = Record<string, unknown>;
 
@@ -87,23 +97,42 @@ export function normalizeUser(value: unknown): UserSummary {
   };
 }
 
+export function normalizeCharacterConfig(value: unknown): CharacterConfig {
+  if (!isRecord(value)) {
+    return DEFAULT_CHARACTER_CONFIG;
+  }
+
+  const gender = value.gender === "male" || value.gender === "female" ? value.gender : DEFAULT_CHARACTER_CONFIG.gender;
+
+  return {
+    gender,
+    skinColor: asOptionalString(value.skin_color ?? value.skinColor) ?? DEFAULT_CHARACTER_CONFIG.skinColor,
+    hairColor: asOptionalString(value.hair_color ?? value.hairColor) ?? DEFAULT_CHARACTER_CONFIG.hairColor,
+    outfitColor: asOptionalString(value.outfit_color ?? value.outfitColor) ?? DEFAULT_CHARACTER_CONFIG.outfitColor,
+  };
+}
+
 export function normalizeProfile(value: unknown): Profile {
-  const record = isRecord(value) ? value : {};
-  const user = normalizeUser(record);
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+  const profile = isRecord(record.profile) ? record.profile : record;
+  const user = normalizeUser(profile);
 
   return {
     ...user,
-    username: asString(record.username ?? user.username, user.username),
-    displayName: asString(record.displayName ?? record.display_name ?? user.displayName, user.displayName),
-    avatarUrl: asOptionalString(record.avatarUrl ?? record.avatar_url, user.avatarUrl),
-    bio: asString(record.bio, ""),
-    ageGroup: asString(record.ageGroup ?? record.age_group, ""),
-    region: asString(record.region, ""),
-    city: asString(record.city, ""),
-    gender: asString(record.gender, ""),
-    primaryLanguage: asString(record.primaryLanguage ?? record.primary_language, ""),
-    languages: asStringArray(record.languages),
-    isComplete: asBoolean(record.isComplete ?? record.is_complete, false),
+    username: asString(profile.username ?? user.username, user.username),
+    displayName: asString(profile.displayName ?? profile.display_name ?? user.displayName, user.displayName),
+    avatarUrl: asOptionalString(profile.avatarUrl ?? profile.avatar_url, user.avatarUrl),
+    bio: asString(profile.bio, ""),
+    dob: asString(profile.dob ?? profile.dateOfBirth ?? profile.date_of_birth, ""),
+    ageGroup: asString(profile.ageGroup ?? profile.age_group, ""),
+    region: asString(profile.region, ""),
+    city: asString(profile.city, ""),
+    gender: asString(profile.gender, ""),
+    characterConfig: normalizeCharacterConfig(profile.character_config ?? profile.characterConfig),
+    primaryLanguage: asString(profile.primaryLanguage ?? profile.primary_language, ""),
+    languages: asStringArray(profile.languages),
+    isComplete: asBoolean(profile.isComplete ?? profile.is_complete, false),
   };
 }
 
@@ -111,8 +140,10 @@ export function normalizeAuthSession(value: unknown): AuthSession {
   const payload = pickRecord(value, ["data"]);
   const record = isRecord(payload) ? payload : {};
   const userSource = record.user ?? record.currentUser ?? record;
-  const profileSource = record.profile;
   const user = normalizeUser(userSource);
+  const profileSource =
+    record.profile ??
+    (isRecord(userSource) ? (userSource as ApiRecord).profile : undefined);
   const profile = isRecord(profileSource) ? normalizeProfile(profileSource) : undefined;
 
   return { user, profile };
@@ -138,6 +169,36 @@ export function normalizeChannel(value: unknown): Channel {
 
 export function normalizeChannelMessages(value: unknown): ChannelMessage[] {
   return pickArray(value, ["messages", "data", "items"]).map(normalizeChannelMessage);
+}
+
+export function normalizePageInfo(value: unknown): PageInfo {
+  const record = isRecord(value) ? value : {};
+
+  if (isRecord(record.pageInfo)) {
+    return normalizePageInfo(record.pageInfo);
+  }
+
+  const nextCursor = record.nextCursor ?? record.next_cursor;
+  const hasMore = record.hasMore ?? record.has_more;
+
+  return {
+    hasMore: asBoolean(hasMore, false),
+    nextCursor:
+      typeof nextCursor === "string" && nextCursor.length > 0 ? nextCursor : null,
+  };
+}
+
+export function normalizeChannelMessagePage(value: unknown): ChannelMessagePage {
+  const record = isRecord(value) ? value : {};
+
+  const messages = normalizeChannelMessages(
+    record.messages ?? pickArray(value, ["messages", "data", "items"]),
+  );
+
+  return {
+    messages,
+    pageInfo: normalizePageInfo(record),
+  };
 }
 
 export function normalizeChannelMessage(value: unknown): ChannelMessage {

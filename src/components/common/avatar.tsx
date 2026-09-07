@@ -1,3 +1,6 @@
+import { cn } from "@/lib/utils";
+import { avatarColor } from "@/lib/channel-colors";
+import { Avatar as AvatarPrimitive, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { UserSummary } from "@/types/domain";
 
 export function Avatar({ user, size = "md" }: { user: UserSummary; size?: "sm" | "md" | "lg" }) {
@@ -6,24 +9,16 @@ export function Avatar({ user, size = "md" }: { user: UserSummary; size?: "sm" |
     md: "h-10 w-10 text-sm",
     lg: "h-16 w-16 text-xl",
   };
-
-  if (user.avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={user.avatarUrl}
-        alt=""
-        className={`${dimensions[size]} rounded-full object-cover`}
-      />
-    );
-  }
+  const color = avatarColor(user.displayName || user.username || user.id);
 
   return (
-    <span
-      className={`${dimensions[size]} grid shrink-0 place-items-center rounded-full bg-slate-200 font-semibold text-slate-700`}
-      aria-hidden
-    >
-      {user.displayName.slice(0, 1).toUpperCase()}
-    </span>
+    <AvatarPrimitive className={dimensions[size]}>
+      <AvatarImage src={user.avatarUrl} alt={user.displayName} />
+      <AvatarFallback
+        className={cn("font-semibold", color.bg, color.text)}
+      >
+        {(user.displayName || "?").slice(0, 1).toUpperCase()}
+      </AvatarFallback>
+    </AvatarPrimitive>
   );
 }

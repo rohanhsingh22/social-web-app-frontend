@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import { useUpdateMyProfile } from "@/features/profile/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 
 export function OnboardingPage() {
   const router = useRouter();
@@ -51,7 +54,7 @@ export function OnboardingPage() {
     return (
       <AppShell>
         <section className="mx-auto max-w-2xl px-4 py-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600">
+          <div className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
             Checking session...
           </div>
         </section>
@@ -73,51 +76,52 @@ export function OnboardingPage() {
   return (
     <AppShell>
       <section className="mx-auto max-w-2xl px-4 py-6">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h1 className="text-2xl font-semibold text-slate-950">
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
+          <h1 className="text-2xl font-bold text-ink">
             Complete your profile
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-2 text-sm leading-6 text-ink-muted">
             Required after first Facebook login when username, age confirmation,
             region, or preferred language is missing.
           </p>
-          <form className="mt-5 grid gap-4">
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Username
-              <input
+          <form className="mt-6 grid gap-4">
+            <Label htmlFor="username" className="grid gap-2">
+              <span>Username</span>
+              <Input
+                id="username"
                 value={form.username}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, username: event.target.value }))
                 }
-                className="h-11 rounded-md border border-slate-200 px-3 text-sm"
                 placeholder="your_username"
               />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Date of birth
-              <input
+            </Label>
+            <Label htmlFor="dob" className="grid gap-2">
+              <span>Date of birth</span>
+              <Input
+                id="dob"
                 value={form.dob}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, dob: event.target.value }))
                 }
                 type="date"
-                className="h-11 rounded-md border border-slate-200 px-3 text-sm"
               />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Region
-              <input
+            </Label>
+            <Label htmlFor="region" className="grid gap-2">
+              <span>Region</span>
+              <Input
+                id="region"
                 value={form.region}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, region: event.target.value }))
                 }
-                className="h-11 rounded-md border border-slate-200 px-3 text-sm"
                 placeholder="India"
               />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Preferred language
-              <select
+            </Label>
+            <Label htmlFor="language" className="grid gap-2">
+              <span>Preferred language</span>
+              <Select
+                id="language"
                 value={form.primaryLanguage}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -125,7 +129,6 @@ export function OnboardingPage() {
                     primaryLanguage: event.target.value,
                   }))
                 }
-                className="h-11 rounded-md border border-slate-200 px-3 text-sm"
               >
                 <option>English</option>
                 <option>Hindi</option>
@@ -133,22 +136,21 @@ export function OnboardingPage() {
                 <option>Telugu</option>
                 <option>Bengali</option>
                 <option>Marathi</option>
-              </select>
-            </label>
+              </Select>
+            </Label>
             {updateProfile.isError ? (
-              <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <p className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger-ink">
                 Could not save profile. Please check the backend response and try
                 again.
               </p>
             ) : null}
-            <button
+            <Button
               type="button"
               onClick={submit}
               disabled={!canSubmit || updateProfile.isPending}
-              className="h-11 rounded-md bg-slate-950 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {updateProfile.isPending ? "Saving..." : "Save profile"}
-            </button>
+            </Button>
           </form>
         </div>
       </section>

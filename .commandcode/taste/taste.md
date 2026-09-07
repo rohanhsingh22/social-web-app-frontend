@@ -1,0 +1,28 @@
+- Prefers dev-only/temporary features (e.g. a dev login flow) to be gated so they never appear in production builds, including disabling dev-only config (e.g. DEV_AUTH_ENABLED=false/unset) in production. Confidence: 0.85
+- Prefers a token-based theming system (light/dark modes plus accent colors) with semantic Tailwind classes like `bg-surface`/`text-ink`/`border-line`, and wants only those theme tokens used in Tailwind classes rather than hardcoded colors. Confidence: 0.9
+o clean up before launch. Confidence: 0.7
+- Prefers environment-configurable base URLs (separate REST vs realtime endpoints via `NEXT_PUBLIC_*`) so services can be pointed independently. Confidence: 0.6
+- Prefers to drive work by consulting project docs/handoff notes and completing everything remaining for a phase end-to-end (full gap analysis) rather than only the narrowly requested change. Confidence: 0.7
+- Prefers fixed-height application layouts where sidebars and side panels stay pinned to the viewport and only the primary content area (e.g. the chat message list) scrolls internally, instead of the whole page scrolling. Confidence: 0.8
+- Prefers defensive normalizers that unwrap backend response envelopes (e.g. `data` → `profile`, `user.profile`) and tolerate both nested and direct shapes rather than assuming a single response shape. Confidence: 0.7
+- Prefers to verify changes with a type check (`tsc --noEmit`), lint, and production build before reporting a fix as complete. Confidence: 0.75
+- Prefers chat/message lists to open scrolled to the newest messages (auto-scroll to bottom) rather than showing the oldest first. Confidence: 0.9
+- Prefers auto-scroll on newly arrived live messages only when the user is already near the bottom, so users reading history aren't yanked down. Confidence: 0.6
+- Prefers reusing existing data sources/logic (e.g. the same Redis presence keys the realtime app maintains) to wire up related features rather than introducing parallel mechanisms or leaving placeholders. Confidence: 0.65
+- Prefers keeping unit tests in sync with service changes (updating existing specs for new constructor deps and return shapes, then re-running them) rather than leaving tests broken. Confidence: 0.7
+- Does not want backend code modified; work should be confined to the frontend. Reading from the backend is fine, but never write to or modify it. Confidence: 0.9
+- Prefers shared cached query hooks (e.g. RTK Query's `useAuthSession`) over re-fetching the same data (like the current user) in each component, to avoid redundant network requests. Confidence: 0.6
+- Prefers building standalone/reusable components first and integrating them into pages afterward, rather than wiring everything inline in one pass. Confidence: 0.6
+- When the same inline JSX pattern repeats across files, prefers extracting it into a single shared component and retrofitting all usages rather than leaving duplication in place. Confidence: 0.75
+- Prefers UI components to accept explicit `width`/`height` props for configurable dimensions instead of relying solely on fixed CSS classes. Confidence: 0.7
+- Prefers square avatars (no rounded corners) with a static solid brand-colored border (like BGMI), no gradient ring, no animation/glow effects, and a fallback initial letter when no image is available. Confidence: 0.75
+- Prefers sensible defaults that users can change later (e.g. a default male avatar switchable to female) rather than prompting for a choice up front. Confidence: 0.6
+- Prefers real 3D rendered objects (e.g. WebGL/Three.js) for visual assets like avatars rather than flat images or placeholders. Confidence: 0.5
+- Prefers 3D characters/avatars with natural human proportions and facial features (eyes, brows, nose, mouth) rather than abstract, blocky, or oversized shapes. Confidence: 0.7
+- Prefers 3D characters to be scaled to fit the viewport centered and grounded in a scene (pedestal/platform, floor, backdrop, contact shadows, lighting/fog) rather than floating in empty space. Confidence: 0.7
+- Prefers right-side slide-out sheets/drawers for showing or editing user details, keeping the main view minimal and focused (e.g. a full-screen 3D character with an "Edit profile" button that opens a right sheet). Confidence: 0.55
+- Prefers dropdowns/selects for categorical/enumerable form fields (e.g. gender, location, primary language) rather than free-text inputs. Confidence: 0.55
+- Prefers the client to send raw source-of-truth fields (e.g. date of birth) and let the server derive computed values (e.g. age group) automatically, rather than the client computing or sending fields the server derives. Confidence: 0.8
+- Prefers runtime HTTP verification of served static assets (checking status code, content-type, and byte size via curl) in addition to typecheck/lint/build, to confirm assets are actually served correctly rather than relying on build success alone. Confidence: 0.65
+- When a fresh dev server can't bind (e.g. port conflict / EADDRINUSE), prefers to leverage an already-running dev server (with HMR, serving `public/` from disk) for runtime verification rather than skipping runtime checks. Confidence: 0.55
+- Does not want changes that contradict project documentation (agent.md, doc/frontend-chat-app.txt, doc/backend-chat-app.txt) unless explicitly requested; when a requested change conflicts with the docs, confirm with the user before proceeding. Confidence: 0.9

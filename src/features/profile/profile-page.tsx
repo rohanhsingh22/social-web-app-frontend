@@ -1,52 +1,135 @@
 "use client";
 
-import { Edit3, X } from "lucide-react";
 import { useState } from "react";
-import { Avatar } from "@/components/common/avatar";
+import {
+  Globe,
+  LogOut,
+  MapPin,
+  MessageSquare,
+  Palette,
+  Shield,
+  UserRound,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
-import { useAuthSession } from "@/features/auth/api";
+import { useAuthSession, useLogout } from "@/features/auth/api";
 import { useMyProfile, useUpdateMyProfile } from "@/features/profile/api";
-import type { Profile } from "@/types/domain";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { CharacterScene } from "@/components/character/character-scene";
+import { ProfileStatsCard } from "@/components/profile/profile-stats-card";
+import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import {
+  DEFAULT_CHARACTER_CONFIG,
+  type CharacterConfig,
+  type Profile,
+} from "@/types/domain";
+
+const GENDER_OPTIONS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+] as const;
+
+const REGION_OPTIONS = [
+  "North America",
+  "South America",
+  "Europe",
+  "Africa",
+  "Asia",
+  "Oceania",
+] as const;
+
+const CITY_OPTIONS = [
+  "New York",
+  "London",
+  "Paris",
+  "Berlin",
+  "Tokyo",
+  "Sydney",
+  "São Paulo",
+  "Lagos",
+  "Mumbai",
+  "Toronto",
+] as const;
+
+const PRIMARY_LANGUAGE_OPTIONS = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Portuguese",
+  "Hindi",
+  "Japanese",
+  "Mandarin",
+  "Arabic",
+  "Russian",
+] as const;
 
 type ProfileFormState = {
   username: string;
   displayName: string;
   bio: string;
+  dob: string;
   region: string;
   city: string;
-  gender: string;
+  gender: CharacterConfig["gender"];
+  skinColor: string;
+  hairColor: string;
+  outfitColor: string;
   primaryLanguage: string;
   languages: string;
 };
 
 function toFormState(profile: Profile): ProfileFormState {
+  const config = profile.characterConfig ?? DEFAULT_CHARACTER_CONFIG;
   return {
     username: profile.username,
     displayName: profile.displayName,
     bio: profile.bio ?? "",
+    dob: profile.dob ?? "",
     region: profile.region ?? "",
     city: profile.city ?? "",
-    gender: profile.gender ?? "",
+    gender: config.gender,
+    skinColor: config.skinColor ?? DEFAULT_CHARACTER_CONFIG.skinColor ?? "#f5d0a9",
+    hairColor: config.hairColor ?? DEFAULT_CHARACTER_CONFIG.hairColor ?? "#2c1a0e",
+    outfitColor: config.outfitColor ?? DEFAULT_CHARACTER_CONFIG.outfitColor ?? "#3b82f6",
     primaryLanguage: profile.primaryLanguage ?? "",
     languages: profile.languages.join(", "),
   };
 }
 
 export function ProfilePage() {
+  const router = useRouter();
   const authQuery = useAuthSession();
   const isLoggedIn = Boolean(authQuery.data);
   const profileQuery = useMyProfile(isLoggedIn);
   const updateProfile = useUpdateMyProfile();
+  const logout = useLogout();
   const profile = profileQuery.data ?? authQuery.data?.profile;
-  const [isEditing, setIsEditing] = useState(false);
+  const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ProfileFormState | null>(null);
+
+  async function handleLogout() {
+    await logout.mutateAsync();
+    router.push("/");
+  }
 
   if (authQuery.isLoading) {
     return (
       <AppShell>
-        <section className="mx-auto max-w-3xl px-4 py-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600">
+        <section className="grid h-full place-items-center px-4">
+          <div className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
             Loading profile...
           </div>
         </section>
@@ -68,8 +151,8 @@ export function ProfilePage() {
   if (profileQuery.isLoading || !profile) {
     return (
       <AppShell>
-        <section className="mx-auto max-w-3xl px-4 py-6">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600">
+        <section className="grid h-full place-items-center px-4">
+          <div className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
             Loading your profile details...
           </div>
         </section>
@@ -77,16 +160,11 @@ export function ProfilePage() {
     );
   }
 
-  if (profileQuery.isError && !profile) {
-    return (
-      <AppShell>
-        <section className="mx-auto max-w-3xl px-4 py-6">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-            Could not load your profile. Please try again.
-          </div>
-        </section>
-      </AppShell>
-    );
+  const currentProfile = profile;
+
+  function openEditor() {
+    setForm(toFormState(currentProfile));
+    setOpen(true);
   }
 
   async function saveProfile() {
@@ -98,121 +176,364 @@ export function ProfilePage() {
       username: form.username.trim(),
       displayName: form.displayName.trim(),
       bio: form.bio.trim(),
-      region: form.region.trim(),
-      city: form.city.trim(),
-      gender: form.gender.trim(),
-      primaryLanguage: form.primaryLanguage.trim(),
+      dob: form.dob || undefined,
+      region: form.region,
+      city: form.city,
+      gender: form.gender,
+      characterConfig: {
+        gender: form.gender,
+        skinColor: form.skinColor,
+        hairColor: form.hairColor,
+        outfitColor: form.outfitColor,
+      },
+      primaryLanguage: form.primaryLanguage,
       languages: form.languages
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
     });
 
-    setIsEditing(false);
+    setOpen(false);
     setForm(null);
   }
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-3xl px-4 py-6">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <div className="flex items-start gap-4">
-            <Avatar user={profile} size="lg" />
+      <section className="showcase-layout relative h-full w-full overflow-hidden">
+        {/* Full-screen character scene as background */}
+        <div className="absolute inset-0">
+          <CharacterScene config={profile.characterConfig} />
+        </div>
+
+        {/* Top gradient overlay for header readability */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 to-transparent" />
+
+        {/* Bottom gradient overlay for action bar */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
+
+        {/* Header */}
+        <header className="showcase-header absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 lg:p-6">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <ShowcaseAvatar
+              src={currentProfile.avatarUrl}
+              alt={currentProfile.displayName}
+              width={56}
+              height={56}
+            />
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-semibold text-slate-950">
-                {profile.displayName}
+              <h1 className="truncate text-xl font-bold text-white drop-shadow-lg lg:text-2xl">
+                {currentProfile.displayName}
               </h1>
-              <p className="text-sm text-slate-500">@{profile.username}</p>
-              {!profile.isComplete ? (
-                <p className="mt-2 inline-flex rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">
-                  Profile incomplete
-                </p>
-              ) : null}
+              <p className="flex items-center gap-1.5 text-sm text-white/60">
+                <span className="truncate">@{currentProfile.username}</span>
+                {currentProfile.role && currentProfile.role !== "user" && (
+                  <span className="inline-flex items-center gap-1 rounded bg-brand/30 px-1.5 py-0.5 text-[10px] font-semibold text-brand backdrop-blur-sm">
+                    <Shield className="h-3 w-3" aria-hidden />
+                    {currentProfile.role}
+                  </span>
+                )}
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (isEditing) {
-                  setIsEditing(false);
-                  setForm(null);
-                  return;
-                }
-
-                setForm(toFormState(profile));
-                setIsEditing(true);
-              }}
-              className="grid h-10 w-10 place-items-center rounded-md border border-slate-200 text-slate-700"
-              aria-label={isEditing ? "Close profile editor" : "Edit profile"}
-            >
-              {isEditing ? (
-                <X className="h-4 w-4" aria-hidden />
-              ) : (
-                <Edit3 className="h-4 w-4" aria-hidden />
-              )}
-            </button>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={openEditor}
+              className="border border-white/10 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+              aria-label="Customize character"
+            >
+              <Palette className="h-4 w-4" aria-hidden />
+            </Button>
+            <Button
+              type="button"
+              onClick={openEditor}
+              className="bg-brand hover:bg-brand-hover"
+            >
+              <UserRound className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">Edit Profile</span>
+            </Button>
+          </div>
+        </header>
 
-          {isEditing && form ? (
-            <form className="mt-6 grid gap-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ProfileField
-                  label="Display name"
+        {/* Stats panel — right side on desktop, bottom on mobile */}
+        <aside className="showcase-stats absolute bottom-20 right-4 z-10 hidden w-72 flex-col gap-2 lg:bottom-24 lg:flex lg:p-6">
+          {currentProfile.ageGroup ? (
+            <ProfileStatsCard
+              icon={Shield}
+              label="Age Group"
+              value={currentProfile.ageGroup}
+            />
+          ) : null}
+          {currentProfile.region ? (
+            <ProfileStatsCard
+              icon={MapPin}
+              label="Location"
+              value={
+                currentProfile.city
+                  ? `${currentProfile.city}, ${currentProfile.region}`
+                  : currentProfile.region
+              }
+            />
+          ) : null}
+          {currentProfile.languages.length > 0 && (
+            <ProfileStatsCard
+              icon={Globe}
+              label="Languages"
+              value={currentProfile.languages.join(", ")}
+            />
+          )}
+          {currentProfile.bio && (
+            <ProfileStatsCard
+              icon={MessageSquare}
+              label="Bio"
+              value={currentProfile.bio}
+              fallback=""
+            />
+          )}
+        </aside>
+
+        {/* Mobile stats — horizontal scroll at bottom */}
+        <div className="absolute inset-x-0 bottom-20 z-10 flex gap-2 overflow-x-auto px-4 pb-2 lg:hidden">
+          {currentProfile.ageGroup && (
+            <div className="shrink-0">
+              <ProfileStatsCard
+                icon={Shield}
+                label="Age"
+                value={currentProfile.ageGroup}
+              />
+            </div>
+          )}
+          {currentProfile.region && (
+            <div className="shrink-0">
+              <ProfileStatsCard
+                icon={MapPin}
+                label="Region"
+                value={currentProfile.region}
+              />
+            </div>
+          )}
+          {currentProfile.languages.length > 0 && (
+            <div className="shrink-0">
+              <ProfileStatsCard
+                icon={Globe}
+                label="Languages"
+                value={currentProfile.languages.join(", ")}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Action bar */}
+        <div className="showcase-actions absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-3 p-4 lg:justify-start lg:p-6">
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            onClick={openEditor}
+            className="border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+          >
+            <Palette className="h-4 w-4" aria-hidden />
+            Customize
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            onClick={openEditor}
+            className="bg-brand shadow-lg shadow-brand/30 hover:bg-brand-hover"
+          >
+            <UserRound className="h-4 w-4" aria-hidden />
+            Edit Profile
+          </Button>
+        </div>
+      </section>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Your profile</SheetTitle>
+            <SheetDescription>
+              Update how you appear across the app.
+            </SheetDescription>
+          </SheetHeader>
+
+          {form ? (
+            <form className="grid gap-4">
+              <Label className="grid gap-2">
+                <span>Display name</span>
+                <Input
                   value={form.displayName}
-                  onChange={(value) =>
+                  onChange={(event) =>
                     setForm((current) =>
-                      current ? { ...current, displayName: value } : current,
+                      current ? { ...current, displayName: event.target.value } : current,
                     )
                   }
                 />
-                <ProfileField
-                  label="Username"
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>Username</span>
+                <Input
                   value={form.username}
-                  onChange={(value) =>
+                  onChange={(event) =>
                     setForm((current) =>
-                      current ? { ...current, username: value } : current,
+                      current ? { ...current, username: event.target.value } : current,
                     )
                   }
                 />
-                <ProfileField
-                  label="Region"
-                  value={form.region}
-                  onChange={(value) =>
-                    setForm((current) =>
-                      current ? { ...current, region: value } : current,
-                    )
-                  }
-                />
-                <ProfileField
-                  label="City"
-                  value={form.city}
-                  onChange={(value) =>
-                    setForm((current) =>
-                      current ? { ...current, city: value } : current,
-                    )
-                  }
-                />
-                <ProfileField
-                  label="Gender"
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>Gender</span>
+                <Select
                   value={form.gender}
-                  onChange={(value) =>
+                  onChange={(event) =>
                     setForm((current) =>
-                      current ? { ...current, gender: value } : current,
+                      current
+                        ? { ...current, gender: event.target.value as CharacterConfig["gender"] }
+                        : current,
                     )
                   }
-                />
-                <ProfileField
-                  label="Primary language"
-                  value={form.primaryLanguage}
-                  onChange={(value) =>
-                    setForm((current) =>
-                      current ? { ...current, primaryLanguage: value } : current,
-                    )
-                  }
-                />
+                >
+                  {GENDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Label>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Label className="grid gap-2">
+                  <span>Skin</span>
+                  <Input
+                    type="color"
+                    value={form.skinColor}
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current ? { ...current, skinColor: event.target.value } : current,
+                      )
+                    }
+                    className="h-10 cursor-pointer p-1"
+                  />
+                </Label>
+                <Label className="grid gap-2">
+                  <span>Hair</span>
+                  <Input
+                    type="color"
+                    value={form.hairColor}
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current ? { ...current, hairColor: event.target.value } : current,
+                      )
+                    }
+                    className="h-10 cursor-pointer p-1"
+                  />
+                </Label>
+                <Label className="grid gap-2">
+                  <span>Outfit</span>
+                  <Input
+                    type="color"
+                    value={form.outfitColor}
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current ? { ...current, outfitColor: event.target.value } : current,
+                      )
+                    }
+                    className="h-10 cursor-pointer p-1"
+                  />
+                </Label>
               </div>
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Bio
-                <textarea
+
+              <Label className="grid gap-2">
+                <span>Date of birth</span>
+                <Input
+                  type="date"
+                  value={form.dob}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, dob: event.target.value } : current,
+                    )
+                  }
+                />
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>Region</span>
+                <Select
+                  value={form.region}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, region: event.target.value } : current,
+                    )
+                  }
+                >
+                  <option value="">Not set</option>
+                  {REGION_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>City</span>
+                <Select
+                  value={form.city}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, city: event.target.value } : current,
+                    )
+                  }
+                >
+                  <option value="">Not set</option>
+                  {CITY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>Primary language</span>
+                <Select
+                  value={form.primaryLanguage}
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current
+                        ? { ...current, primaryLanguage: event.target.value }
+                        : current,
+                    )
+                  }
+                >
+                  <option value="">Not set</option>
+                  {PRIMARY_LANGUAGE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>Languages</span>
+                <Input
+                  value={form.languages}
+                  placeholder="English, Spanish"
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current ? { ...current, languages: event.target.value } : current,
+                    )
+                  }
+                />
+              </Label>
+
+              <Label className="grid gap-2">
+                <span>Bio</span>
+                <Textarea
                   value={form.bio}
                   onChange={(event) =>
                     setForm((current) =>
@@ -220,102 +541,47 @@ export function ProfilePage() {
                     )
                   }
                   rows={4}
-                  className="rounded-md border border-slate-200 px-3 py-2 text-sm"
                 />
-              </label>
-              <ProfileField
-                label="Languages"
-                value={form.languages}
-                onChange={(value) =>
-                  setForm((current) =>
-                    current ? { ...current, languages: value } : current,
-                  )
-                }
-              />
+              </Label>
+
               {updateProfile.isError ? (
-                <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <p className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger-ink">
                   Could not save profile. Please check the fields and try again.
                 </p>
               ) : null}
-              <div className="flex flex-wrap gap-2">
-                <button
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button
                   type="button"
                   onClick={saveProfile}
                   disabled={updateProfile.isPending}
-                  className="h-11 rounded-md bg-slate-950 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {updateProfile.isPending ? "Saving..." : "Save changes"}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setForm(null);
-                  }}
-                  className="h-11 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
-          ) : (
-            <>
-              <p className="mt-5 text-sm leading-6 text-slate-700">
-                {profile.bio || "No bio added yet."}
-              </p>
-              <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
-                <div>
-                  <dt className="font-semibold text-slate-950">Age group</dt>
-                  <dd className="mt-1 text-slate-600">
-                    {profile.ageGroup || "Not set"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-slate-950">Region</dt>
-                  <dd className="mt-1 text-slate-600">
-                    {profile.region || "Not set"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-slate-950">Languages</dt>
-                  <dd className="mt-1 text-slate-600">
-                    {profile.languages.length
-                      ? profile.languages.join(", ")
-                      : "Not set"}
-                  </dd>
-                </div>
-              </dl>
-            </>
-          )}
-          {profileQuery.isError ? (
-            <p className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              Could not load `/profiles/me`. Showing session profile data if
-              available.
-            </p>
           ) : null}
-        </div>
-      </section>
-    </AppShell>
-  );
-}
 
-function ProfileField({
-  label,
-  onChange,
-  value,
-}: {
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  return (
-    <label className="grid gap-2 text-sm font-medium text-slate-700">
-      {label}
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-11 rounded-md border border-slate-200 px-3 text-sm"
-      />
-    </label>
+          <div className="mt-6 border-t border-line pt-4">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleLogout}
+              disabled={logout.isPending}
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              {logout.isPending ? "Logging out..." : "Log out"}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </AppShell>
   );
 }

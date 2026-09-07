@@ -1,5 +1,8 @@
+"use client";
+
 import { LockKeyhole } from "lucide-react";
-import { FacebookLoginButton } from "@/components/auth/facebook-login-button";
+import { ProviderLoginButton } from "@/components/auth/provider-login-button";
+import { useAuthProvidersQuery } from "@/rtk/auth/auth-api";
 
 export function LockedPanel({
   title,
@@ -8,14 +11,19 @@ export function LockedPanel({
   title: string;
   message: string;
 }) {
+  const { data: providers = [] } = useAuthProvidersQuery();
+  const firstProvider = providers[0];
+
   return (
     <section className="grid min-h-dvh place-items-center px-4 py-8">
-      <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <LockKeyhole className="mb-4 h-9 w-9 text-slate-500" aria-hidden />
-        <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{message}</p>
-        <div className="mt-5">
-          <FacebookLoginButton />
+      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-8 shadow-lg">
+        <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
+          <LockKeyhole className="h-7 w-7" aria-hidden />
+        </div>
+        <h1 className="text-2xl font-bold text-ink">{title}</h1>
+        <p className="mt-2 text-sm leading-6 text-ink-muted">{message}</p>
+        <div className="mt-6">
+          {firstProvider ? <ProviderLoginButton provider={firstProvider} /> : null}
         </div>
       </div>
     </section>

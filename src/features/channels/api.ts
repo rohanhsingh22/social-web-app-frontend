@@ -1,3 +1,4 @@
+export type { ChannelMessagesQueryArgs } from "@/rtk/channels/channels-api";
 export {
   channelsApi,
   useChannel,
@@ -8,4 +9,5 @@ export {
   useChannelsQuery,
   useDefaultChannel,
   useDefaultChannelQuery,
+  useLazyChannelMessagesQuery,
 } from "@/rtk/channels/channels-api";
