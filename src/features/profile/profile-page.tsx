@@ -412,7 +412,7 @@ export function ProfilePage() {
 
                         <div className="flex h-[calc(100%-32px)] min-h-[100px] items-center justify-center rounded-lg border border-dashed border-line">
                           <span className="text-sm text-ink-muted">
-                            No stats available yet
+                            Comming Soon
                           </span>
                         </div>
                       </div>
@@ -626,7 +626,7 @@ export function ProfilePage() {
                   LOGOUT
                   -------------------------------------------------- */}
 
-              <div className="mt-auto shrink-0">
+              {/* <div className="mt-auto shrink-0">
                 <Button
                   type="button"
                   variant="destructive"
@@ -638,7 +638,7 @@ export function ProfilePage() {
 
                   {logout.isPending ? "Logging out..." : "Log out"}
                 </Button>
-              </div>
+              </div> */}
             </aside>
           </div>
         </div>

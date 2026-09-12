@@ -662,8 +662,7 @@ None documented as "Toli" specifically.
 - `ChatShell` - Main chat interface
 - `LoginPanel` - Login page
 - `OnboardingPage` - Profile completion
-- `ProfilePage` - Own profile with 3D scene
-- `PublicProfilePage` - Public profile view
+- `ProfilePage` - Own profile with 3D scene(A user can see someone else profile if they are authenticted)
 - `ConnectionsPage` - Placeholder
 - `DirectMessagePage` - Placeholder
 - `SettingsPage` - Settings
