@@ -271,26 +271,26 @@ export function ProfilePage() {
                     COVER
                     -------------------------------------------------- */}
 
-                <div className="relative h-[190px] shrink-0 overflow-hidden lg:h-[220px]">
+                <div className="relative h-47.5 shrink-0 overflow-hidden lg:h-55">
                   {/* Main gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#172b67] via-[#253c91] to-[#4b267d]" />
+                  <div className="absolute inset-0 bg-linear-to-br from-[#172b67] via-[#253c91] to-[#4b267d]" />
 
                   {/* Decorative glow */}
                   <div className="absolute -left-20 -top-32 h-80 w-80 rounded-full bg-purple-500/30 blur-3xl" />
 
                   <div className="absolute -right-20 top-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl" />
 
-                  <div className="absolute bottom-[-160px] left-[35%] h-80 w-80 rounded-full bg-indigo-500/30 blur-3xl" />
+                  <div className="absolute -bottom-40 left-[35%] h-80 w-80 rounded-full bg-indigo-500/30 blur-3xl" />
 
                   {/* Decorative circles */}
-                  <div className="absolute right-[12%] top-[18%] h-28 w-28 rounded-full border border-white/10 bg-white/[0.03]" />
+                  <div className="absolute right-[12%] top-[18%] h-28 w-28 rounded-full border border-white/10 bg-white/3" />
 
-                  <div className="absolute right-[18%] top-[32%] h-12 w-12 rounded-full border border-white/10 bg-white/[0.04]" />
+                  <div className="absolute right-[18%] top-[32%] h-12 w-12 rounded-full border border-white/10 bg-white/4" />
 
-                  <div className="absolute left-[20%] top-[25%] h-20 w-20 rounded-full border border-white/10 bg-white/[0.03]" />
+                  <div className="absolute left-[20%] top-[25%] h-20 w-20 rounded-full border border-white/10 bg-white/3" />
 
                   {/* Bottom fade */}
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-surface to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-surface to-transparent" />
                 </div>
 
                 {/* --------------------------------------------------
@@ -407,7 +407,7 @@ export function ProfilePage() {
                       <div className="min-h-0 flex-1 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
                         <h2 className="mb-3 font-semibold text-ink">Stats</h2>
 
-                        <div className="flex h-[calc(100%-32px)] min-h-[100px] items-center justify-center rounded-lg border border-dashed border-line">
+                        <div className="flex h-[calc(100%-32px)] min-h-25 items-center justify-center rounded-lg border border-dashed border-line">
                           <span className="text-sm text-ink-muted">
                             Comming Soon
                           </span>
@@ -423,7 +423,7 @@ export function ProfilePage() {
                         </div>
 
                         {/* Character area */}
-                        <div className="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-lg bg-gradient-to-b from-background/40 to-background">
+                        <div className="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-lg bg-linear-to-b from-background/40 to-background">
                           {/* Character glow */}
                           <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-3xl" />
 
