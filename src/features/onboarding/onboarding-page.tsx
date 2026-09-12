@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
@@ -12,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
 export function OnboardingPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const authQuery = useAuthSession();
   const profileQuery = useMyProfile(Boolean(authQuery.data));
   const updateProfile = useUpdateMyProfile();
@@ -46,9 +44,9 @@ export function OnboardingPage() {
 
   useEffect(() => {
     if (profile?.isComplete) {
-      router.replace("/profile");
+      navigate("/profile", { replace: true });
     }
-  }, [profile?.isComplete, router]);
+  }, [profile?.isComplete, navigate]);
 
   async function submit() {
     if (!authQuery.data || !canSubmit) {
@@ -63,7 +61,7 @@ export function OnboardingPage() {
       languages: [form.primaryLanguage],
     });
 
-    router.push("/profile");
+    navigate("/profile");
   }
 
   if (authQuery.isLoading || profileQuery.isLoading) {

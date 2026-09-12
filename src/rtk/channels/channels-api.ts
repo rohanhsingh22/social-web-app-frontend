@@ -1,5 +1,3 @@
-"use client";
-
 import { skipToken } from "@reduxjs/toolkit/query";
 import { baseApi } from "@/rtk/base-api";
 import {

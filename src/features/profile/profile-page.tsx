@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense, useEffect, useState } from "react";
 import {
   CalendarDays,
@@ -12,7 +10,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
@@ -34,7 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { Avatar } from "@/components/character/avatar";
 import { Canvas } from "@react-three/fiber";
-import { ProfileStatsCard } from "@/components/profile/profile-stats-card";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
 
 import {
@@ -121,7 +118,7 @@ function toFormState(profile: Profile): ProfileFormState {
 }
 
 export function ProfilePage() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const authQuery = useAuthSession();
   const isLoggedIn = Boolean(authQuery.data);
@@ -177,7 +174,7 @@ export function ProfilePage() {
 
   async function handleLogout() {
     await logout.mutateAsync();
-    router.push("/");
+    navigate("/");
   }
 
   if (authQuery.isLoading) {

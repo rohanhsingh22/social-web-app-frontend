@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { LockKeyhole, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +9,7 @@ export function LockedPanel({
   title: string;
   message: string;
 }) {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   return (
     <section className="grid min-h-dvh place-items-center px-4 py-8">
@@ -22,7 +20,7 @@ export function LockedPanel({
         <h1 className="text-2xl font-bold text-ink">{title}</h1>
         <p className="mt-2 text-sm leading-6 text-ink-muted">{message}</p>
         <div className="mt-6">
-          <Button onClick={() => router.push("/login")} className="w-full gap-2">
+          <Button onClick={() => navigate("/login")} className="w-full gap-2">
             <LogIn className="h-4 w-4" />
             Login
           </Button>

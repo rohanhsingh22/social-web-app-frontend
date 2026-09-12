@@ -1,5 +1,3 @@
-"use client";
-
 import { ContactShadows, OrbitControls, Sparkles } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useRef, useState } from "react";

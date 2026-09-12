@@ -1,5 +1,3 @@
-"use client";
-
 import { baseApi } from "@/rtk/base-api";
 
 export type ThemePreference = "light" | "dark" | "system";

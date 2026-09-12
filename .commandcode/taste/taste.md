@@ -36,3 +36,12 @@ o clean up before launch. Confidence: 0.7
 - Prefers full-screen immersive layouts for auth/transitional pages (login, auth callback, etc.) that use the full viewport with rich visuals rather than small centered cards. Confidence: 0.65
 - Prefers consistent visual branding and design language across all auth-related pages (login, signup, auth callback, onboarding) so they feel like a cohesive flow. Confidence: 0.65
 - Prefers visible countdown timers (e.g., 3-2-1) for automatic redirects so users know exactly when they'll be navigated away. Confidence: 0.6
+- Prefers to inspect and understand the existing codebase/architecture before making changes, and to work in explicit phases (audit → written migration plan/checklist → incremental implementation → validation → final audit for leftover references) rather than blind find-and-replace edits. Confidence: 0.85
+- Prefers to preserve existing UI and functionality and avoid rewriting components unnecessarily during migrations or refactors. Confidence: 0.8
+- Prefers not to delete files or remove dependencies just because they look framework-specific; remove them only after the migration is validated and confirmed working. Confidence: 0.75
+- Prefers to keep existing working libraries/tools (e.g. RTK Query, Redux, shadcn/ui, Tailwind CSS, Socket.IO, Three.js/React Three Fiber) rather than swapping them for alternatives during a migration. Confidence: 0.75
+- Prefers HttpOnly-cookie based authentication (access/refresh cookies) and does not want auth tokens moved into localStorage. Confidence: 0.8
+- Prefers not to expose secrets in frontend environment variables; only non-secret build-time config (e.g. `import.meta.env` `VITE_*`) belongs in frontend env. Confidence: 0.75
+- When doing frontend work, prefers not to change API request/response shapes, database models, authentication security behavior, or rewrite working business logic. Confidence: 0.8
+- Prefers a structured end-of-task report listing files created/modified/deleted, dependencies added/removed, features replaced, remaining issues, and exact run commands. Confidence: 0.8
+- Prefers to keep the project's `agent.md` reference doc in sync after significant migrations/refactors (updating stack, commands, env vars, directory map, routing conventions, and correcting stale details like renamed files or newly-wired modules) rather than leaving it describing the old architecture. Confidence: 0.7

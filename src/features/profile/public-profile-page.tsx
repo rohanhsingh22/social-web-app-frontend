@@ -1,5 +1,3 @@
-"use client";
-
 import { Globe, MapPin, MessageSquare, Shield } from "lucide-react";
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";

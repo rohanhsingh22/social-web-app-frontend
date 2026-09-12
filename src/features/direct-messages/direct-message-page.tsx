@@ -1,5 +1,3 @@
-"use client";
-
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
@@ -8,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DirectMessagePage({ conversationId }: { conversationId: string }) {
+  void conversationId;
   const authQuery = useAuthSession();
 
   if (!authQuery.data) {

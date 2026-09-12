@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Hash } from "lucide-react";
 import { channelColor } from "@/lib/channel-colors";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export function ChannelList({
           return (
             <Link
               key={channel.id}
-              href={channel.isDefault ? "/" : `/channels/${channel.slug}`}
+              to={channel.isDefault ? "/" : `/channels/${channel.slug}`}
               onClick={onSelect}
               className={clsx(
                 "mb-1 flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors hover:bg-surface-hover",

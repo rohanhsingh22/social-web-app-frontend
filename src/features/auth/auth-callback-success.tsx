@@ -1,7 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from "react-router-dom";
 import { Check, Globe, MessageCircle, PartyPopper, Rocket, Shield, Sparkles, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuthSession, useRefreshSessionMutation } from "@/features/auth/api";
@@ -16,7 +13,7 @@ function FeaturePill({ icon: Icon, text }: { icon: typeof MessageCircle; text: s
 }
 
 export function AuthCallbackSuccess() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const authQuery = useAuthSession();
   const profile = authQuery.data?.profile;
   const [refreshSession] = useRefreshSessionMutation();
@@ -33,11 +30,11 @@ export function AuthCallbackSuccess() {
       }
 
       if (profile && !profile.isComplete) {
-        router.replace("/onboarding");
+        navigate("/onboarding", { replace: true });
         return;
       }
 
-      router.replace("/");
+      navigate("/", { replace: true });
     }
 
     if (authQuery.data) {
@@ -47,7 +44,7 @@ export function AuthCallbackSuccess() {
     return () => {
       cancelled = true;
     };
-  }, [authQuery.data, profile, router, refreshSession]);
+  }, [authQuery.data, profile, navigate, refreshSession]);
 
   useEffect(() => {
     if (authQuery.isLoading || !authQuery.data) {
@@ -89,7 +86,7 @@ export function AuthCallbackSuccess() {
       {/* Top bar */}
       <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <Link
-          href="/"
+          to="/"
           className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
         >
           <Globe className="h-4 w-4" />
@@ -175,7 +172,7 @@ export function AuthCallbackSuccess() {
           {/* CTA button */}
           <div className="mt-8">
             <Link
-              href={needsOnboarding ? "/onboarding" : "/"}
+              to={needsOnboarding ? "/onboarding" : "/"}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-8 text-base font-semibold text-brand shadow-lg transition-all hover:scale-105 hover:shadow-xl"
             >
               {needsOnboarding ? (

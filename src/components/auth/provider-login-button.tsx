@@ -1,5 +1,3 @@
-"use client";
-
 import { Facebook, Globe, Linkedin } from "lucide-react";
 import { config } from "@/lib/config";
 import type { AuthProviderInfo } from "@/rtk/auth/auth-api";

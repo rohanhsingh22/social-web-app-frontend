@@ -1,8 +1,5 @@
-"use client";
-
 import clsx from "clsx";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 import { Home, Lightbulb, MessageCircle, MessageSquare, Settings, UsersRound } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -18,7 +15,7 @@ const navItems = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const channelsQuery = useChannels();
   const channels = channelsQuery.data ?? [];
 
@@ -50,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 className={clsx(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ink-subtle transition-all hover:bg-surface-hover hover:text-ink",
                   active &&
@@ -97,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={clsx(
                 "flex flex-col items-center justify-center gap-1 text-xs font-medium text-ink-subtle",
                 active && "text-brand-ink",

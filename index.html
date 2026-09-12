@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Social Chat</title>
+    <meta name="description" content="Live public channels, connections, and private chat." />
+    <script>
+      (function () {
+        try {
+          var key = "social-chat-theme";
+          var stored = window.localStorage.getItem(key);
+          var mode = "system";
+          var accent = "rose";
+
+          if (stored) {
+            var parsed = JSON.parse(stored);
+            if (parsed.mode === "light" || parsed.mode === "dark" || parsed.mode === "system") {
+              mode = parsed.mode;
+            }
+            if (parsed.accent) {
+              accent = parsed.accent;
+            }
+          }
+
+          var resolved = mode;
+          if (mode === "system") {
+            resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+
+          var root = document.documentElement;
+          root.classList.toggle("dark", resolved === "dark");
+          root.setAttribute("data-accent", accent);
+        } catch (error) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

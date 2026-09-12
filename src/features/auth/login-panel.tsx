@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { Globe, MessageCircle, Moon, Sun, Users, Zap } from "lucide-react";
 import { ProviderLoginButton } from "@/components/auth/provider-login-button";
 import { useAuthProvidersQuery, useAuthSession } from "@/rtk/auth/auth-api";
@@ -79,15 +77,15 @@ function LoginForm() {
 }
 
 export function LoginPanel() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const authQuery = useAuthSession();
   const { mode, setMode } = useThemeMode();
 
   useEffect(() => {
     if (authQuery.data) {
-      router.replace("/");
+      navigate("/", { replace: true });
     }
-  }, [authQuery.data, router]);
+  }, [authQuery.data, navigate]);
 
   if (authQuery.isLoading) {
     return (
@@ -115,7 +113,7 @@ export function LoginPanel() {
         </Button>
         <Button
           variant="ghost"
-          onClick={() => router.push("/")}
+          onClick={() => navigate("/")}
           className="gap-2 bg-surface/80 backdrop-blur-sm"
         >
           <Globe className="h-4 w-4" />

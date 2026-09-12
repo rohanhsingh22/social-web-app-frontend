@@ -1,19 +1,11 @@
-"use client";
-
-import dynamic from "next/dynamic";
+import { lazy, Suspense } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CharacterScene = dynamic(
-  () => import("@/components/character/character-scene").then((m) => m.CharacterScene),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid h-full place-items-center">
-        <Skeleton className="h-64 w-64 rounded-3xl" />
-      </div>
-    ),
-  },
+const CharacterScene = lazy(() =>
+  import("@/components/character/character-scene").then((m) => ({
+    default: m.CharacterScene,
+  })),
 );
 
 const characters = [
@@ -25,7 +17,15 @@ export default function HomePage() {
   return (
     <AppShell>
       <div className="flex h-full flex-col">
-        <CharacterScene configs={characters} interactive />
+        <Suspense
+          fallback={
+            <div className="grid h-full place-items-center">
+              <Skeleton className="h-64 w-64 rounded-3xl" />
+            </div>
+          }
+        >
+          <CharacterScene configs={characters} interactive />
+        </Suspense>
       </div>
     </AppShell>
   );

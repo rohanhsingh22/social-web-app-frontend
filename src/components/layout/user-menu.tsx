@@ -1,10 +1,8 @@
-"use client";
-
 import { LogOut, Moon, Sun, Settings } from "lucide-react";
 import { Avatar as AvatarPrimitive, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { avatarColor } from "@/lib/channel-colors";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useAuthSession, useLogout } from "@/features/auth/api";
 import { useThemeMode } from "@/components/theme/theme-toggle";
 import {
@@ -30,7 +28,7 @@ function SquareAvatar({ user }: { user: UserSummary }) {
 }
 
 export function UserMenu({ showName = false }: { showName?: boolean }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const authQuery = useAuthSession();
   const { mutateAsync: logout } = useLogout();
   const { mode, setMode } = useThemeMode();
@@ -89,7 +87,7 @@ export function UserMenu({ showName = false }: { showName?: boolean }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"
-          onSelect={() => router.push("/settings")}
+          onSelect={() => navigate("/settings")}
         >
           <Settings className="h-4 w-4" />
           Settings

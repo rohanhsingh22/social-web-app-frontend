@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   Hash,
@@ -11,7 +9,6 @@ import {
   Wifi,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
 import { AppShell } from "@/components/layout/app-shell";
@@ -52,7 +49,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const isPinnedToBottomRef = useRef(true);
   const hasAutoScrolledRef = useRef(false);
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const authQuery = useAuthSession();
   const channelsQuery = useChannels();
   const channelQuery = useChannel(initialSlug);
@@ -378,7 +375,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
-                        href={`/users/${item.sender.username}`}
+                        to={`/users/${item.sender.username}`}
                         className="text-sm font-semibold text-ink hover:underline"
                       >
                         {item.sender.displayName}
@@ -419,7 +416,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                   <div className="mt-3">
                     <Button
                       type="button"
-                      onClick={() => router.push("/login")}
+                      onClick={() => navigate("/login")}
                       className="w-full gap-2"
                     >
                       <LogIn className="h-4 w-4" />
@@ -491,7 +488,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
               <div className="mt-4">
                 <Button
                   type="button"
-                  onClick={() => router.push("/login")}
+                  onClick={() => navigate("/login")}
                   className="w-full gap-2"
                 >
                   <LogIn className="h-4 w-4" />

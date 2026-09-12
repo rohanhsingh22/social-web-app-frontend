@@ -1,5 +1,3 @@
-"use client";
-
 import clsx from "clsx";
 import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useGLTF } from "@react-three/drei";
 import { useMemo } from "react";
 import { Box3, MeshStandardMaterial, Vector3 } from "three";

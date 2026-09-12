@@ -458,7 +458,7 @@
 //               >
 //                 <button
 //                   type="button"
-//                   onClick={() => router.push("/profile")}
+//                   onClick={() => navigate("/profile")}
 //                   className="flex items-center gap-1 text-sm font-medium text-brand"
 //                 >
 //                   Edit
@@ -525,7 +525,6 @@
 //     </AppShell>
 //   );
 // }
-"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -554,7 +553,7 @@ import {
 } from "lucide-react";
 
 import { useDispatch } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { LockedPanel } from "@/components/common/locked-panel";
@@ -857,7 +856,7 @@ function VisibilityItem({
 ========================================================= */
 
 export function SettingsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
   const authQuery = useAuthSession();
@@ -1068,7 +1067,7 @@ export function SettingsPage() {
   const handleLogout = async () => {
     await logout.mutateAsync();
 
-    router.push("/");
+    navigate("/");
   };
 
 
@@ -1169,7 +1168,7 @@ export function SettingsPage() {
                 variant="outline"
                 size="sm"
                 className="hidden shrink-0 rounded-xl sm:flex"
-                onClick={() => router.push("/profile")}
+                onClick={() => navigate("/profile")}
               >
                 <CircleUserRound className="mr-2 h-4 w-4" />
                 View profile
@@ -1674,7 +1673,7 @@ export function SettingsPage() {
                           size="sm"
                           className="rounded-xl"
                           onClick={() =>
-                            router.push("/profile")
+                            navigate("/profile")
                           }
                         >
                           Edit
