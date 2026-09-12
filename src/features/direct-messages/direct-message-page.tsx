@@ -15,7 +15,7 @@ export function DirectMessagePage({ conversationId }: { conversationId: string }
       <AppShell>
         <LockedPanel
           title="Private chat is locked"
-          message={`Conversation ${conversationId} can open after Facebook login and an accepted connection.`}
+          message={`Login and connect to view this conversation.`}
         />
       </AppShell>
     );

@@ -17,7 +17,7 @@ export function ConnectionsPage() {
       <AppShell>
         <LockedPanel
           title="Login required"
-          message="Connections, requests, user search, and private chat are available after Facebook login."
+          message="Login to view connections, send requests, and chat."
         />
       </AppShell>
     );

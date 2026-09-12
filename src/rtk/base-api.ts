@@ -27,13 +27,12 @@ const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  if (!getAccessToken()) {
-    await ensureFreshAccessToken();
-  }
-
   let result = await rawBaseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
+  const requestUrl = typeof args === "string" ? args : args.url;
+  const canRefresh = requestUrl !== "/auth/refresh";
+
+  if (canRefresh && result.error && result.error.status === 401) {
     const freshToken = await ensureFreshAccessToken();
 
     if (freshToken) {
@@ -49,6 +48,6 @@ const baseQueryWithReauth: BaseQueryFn<
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["AuthSession", "Channels", "Channel", "ChannelMessages", "Profile"],
+  tagTypes: ["AuthSession", "Channels", "Channel", "ChannelMessages", "Profile", "Settings"],
   endpoints: () => ({}),
 });

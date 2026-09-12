@@ -1,19 +1,14 @@
 "use client";
 
-import { ContactShadows, OrbitControls, Sparkles, useGLTF } from "@react-three/drei";
+import { ContactShadows, OrbitControls, Sparkles } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Box3,
-  MeshStandardMaterial,
-  PointLight,
-  Vector3,
-} from "three";
-import type { Mesh, Object3D } from "three";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { MeshStandardMaterial, PointLight } from "three";
 import {
   DEFAULT_CHARACTER_CONFIG,
   type CharacterConfig,
 } from "@/types/domain";
+import { Avatar } from "./avatar";
 
 function readThemeColor(token: string): string {
   if (typeof document === "undefined") {
@@ -42,45 +37,7 @@ function useThemeColor(token: string): string {
   return color;
 }
 
-const AVATAR_SRC: Record<CharacterConfig["gender"], string> = {
-  male: "/character-scene/male.glb",
-  female: "/character-scene/female.glb",
-};
-
-function Avatar({ config }: { config: CharacterConfig }) {
-  const gltf = useGLTF(AVATAR_SRC[config.gender]);
-
-  const scene = useMemo(() => {
-    const root = gltf.scene.clone();
-    const box = new Box3().setFromObject(root);
-    const center = box.getCenter(new Vector3());
-    root.position.set(-center.x, -box.min.y, -center.z);
-    root.traverse((node: Object3D) => {
-      if ((node as Mesh).isMesh) {
-        const mesh = node as Mesh;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-
-        const material = (mesh as Mesh).material as MeshStandardMaterial | undefined;
-        if (material) {
-          const name = mesh.name.toLowerCase();
-          if (name.includes("skin") || name.includes("body") || name.includes("face")) {
-            material.color.set(config.skinColor ?? DEFAULT_CHARACTER_CONFIG.skinColor ?? "#f5d0a9");
-          } else if (name.includes("hair")) {
-            material.color.set(config.hairColor ?? DEFAULT_CHARACTER_CONFIG.hairColor ?? "#2c1a0e");
-          } else if (name.includes("cloth") || name.includes("shirt") || name.includes("outfit")) {
-            material.color.set(config.outfitColor ?? DEFAULT_CHARACTER_CONFIG.outfitColor ?? "#3b82f6");
-          }
-        }
-      }
-    });
-    return root;
-  }, [gltf, config.skinColor, config.hairColor, config.outfitColor]);
-
-  return <primitive object={scene} dispose={null} />;
-}
-
-function Pedestal({ accentColor }: { accentColor: string }) {
+function Pedestal({ accentColor, scale = 1 }: { accentColor: string; scale?: number }) {
   const ringRef = useRef<MeshStandardMaterial>(null);
 
   useFrame(({ clock }) => {
@@ -91,7 +48,7 @@ function Pedestal({ accentColor }: { accentColor: string }) {
   });
 
   return (
-    <group position={[0, -0.02, 0]}>
+    <group position={[0, -0.02, 0]} scale={[scale, 1, scale]}>
       {/* Main platform */}
       <mesh receiveShadow position={[0, 0, 0]}>
         <cylinderGeometry args={[1.8, 2.0, 0.12, 64]} />
@@ -168,32 +125,40 @@ function BackdropGlow({ accentColor }: { accentColor: string }) {
 
 export function CharacterScene({
   config,
+  configs,
   animate = false,
   interactive = true,
 }: {
   config?: CharacterConfig;
+  configs?: CharacterConfig[];
   animate?: boolean;
   interactive?: boolean;
 }) {
-  const resolvedConfig = config ?? DEFAULT_CHARACTER_CONFIG;
+  const characterConfigs = configs ?? [config ?? DEFAULT_CHARACTER_CONFIG];
   const inkSubtleColor = useThemeColor("--ink-subtle");
   const accentColor = useThemeColor("--brand") || "#ff2e63";
+
+  const count = characterConfigs.length;
+  const spacing = 7;
+  const charScale = 0.8;
+  const totalWidth = Math.max((count - 1) * spacing, 6);
+
+  const cameraZ = 5 + totalWidth * 0.5;
+  const orbitMin = 4 + totalWidth * 0.4;
+  const orbitMax = 8 + totalWidth * 0.6;
 
   return (
     <div className="showcase-scene relative h-full min-h-[500px] overflow-hidden">
       <Canvas
         className="h-full w-full"
         shadows
-        camera={{ position: [0, 1.4, 3.5], fov: 38 }}
+        camera={{ position: [0, 1.4, cameraZ], fov: 38 }}
         dpr={[1, 2]}
       >
-        {/* Fog for depth */}
-        <fog attach="fog" args={["#0a0b10", 4, 12]} />
+        <fog attach="fog" args={["#0a0b10", 4 + totalWidth, 12 + totalWidth]} />
 
-        {/* Ambient fill */}
         <ambientLight color={inkSubtleColor || "#ffffff"} intensity={0.4} />
 
-        {/* Key light — main directional */}
         <directionalLight
           position={[4, 8, 5]}
           intensity={1.6}
@@ -203,48 +168,46 @@ export function CharacterScene({
           shadow-bias={-0.0004}
         />
 
-        {/* Fill light — softer from opposite side */}
         <directionalLight
           position={[-4, 5, -3]}
           intensity={0.5}
           color="#ffffff"
         />
 
-        {/* Rim light — accent colored back light for hero look */}
         <directionalLight
           position={[0, 4, -5]}
           intensity={1.2}
           color={accentColor}
         />
 
-        {/* Platform glow light */}
         <PlatformGlow accentColor={accentColor} />
-
-        {/* Backdrop glow */}
         <BackdropGlow accentColor={accentColor} />
 
-        {/* Floating particles */}
         <Sparkles
           count={60}
-          scale={6}
+          scale={6 + totalWidth}
           size={2}
           speed={0.4}
           opacity={0.5}
           color={accentColor}
         />
 
-        {/* Pedestal */}
-        <Pedestal accentColor={accentColor} />
+        <Pedestal accentColor={accentColor} scale={1.6 + totalWidth * 0.5} />
 
-        {/* Character */}
         <Suspense fallback={null}>
-          <Avatar config={resolvedConfig} />
+          {characterConfigs.map((cfg, i) => (
+            <Avatar
+              key={i}
+              config={cfg}
+              position={[(i * spacing) - totalWidth / 2, 0, 0]}
+              scale={charScale}
+            />
+          ))}
         </Suspense>
 
-        {/* Contact shadows under character */}
         <ContactShadows
           position={[0, 0.01, 0]}
-          scale={5}
+          scale={5 + totalWidth}
           blur={2.5}
           opacity={0.6}
           far={4}
@@ -260,8 +223,8 @@ export function CharacterScene({
             enableRotate
             minPolarAngle={Math.PI / 2}
             maxPolarAngle={Math.PI / 2}
-            minDistance={2.2}
-            maxDistance={4.8}
+            minDistance={orbitMin}
+            maxDistance={orbitMax}
             target={[0, 1.3, 0]}
           />
         )}

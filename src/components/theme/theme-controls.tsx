@@ -7,10 +7,25 @@ import { accentOptions, themeModes } from "@/lib/theme";
 import { setThemeAccent, setThemeMode } from "@/store/ui-slice";
 import { Button } from "@/components/ui/button";
 import type { AppDispatch, RootState } from "@/store/store";
+import { useUpdateSettingsMutation } from "@/rtk/settings/settings-api";
 
 export function ThemeControls() {
   const theme = useSelector((state: RootState) => state.ui.theme);
   const dispatch = useDispatch<AppDispatch>();
+  const [updateSettings] = useUpdateSettingsMutation();
+
+  const handleModeChange = (mode: (typeof themeModes)[number]["value"]) => {
+    dispatch(setThemeMode(mode));
+    updateSettings({ theme: mode });
+  };
+
+  const handleAccentChange = (accent: (typeof accentOptions)[number]["value"]) => {
+    dispatch(setThemeAccent(accent));
+    const swatch = accentOptions.find((a) => a.value === accent)?.swatch;
+    if (swatch) {
+      updateSettings({ accentColor: swatch });
+    }
+  };
 
   return (
     <div className="grid gap-8">
@@ -30,7 +45,7 @@ export function ThemeControls() {
                 key={mode.value}
                 type="button"
                 variant={active ? "default" : "outline"}
-                onClick={() => dispatch(setThemeMode(mode.value))}
+                onClick={() => handleModeChange(mode.value)}
                 aria-pressed={active}
                 className="gap-2"
               >
@@ -55,7 +70,7 @@ export function ThemeControls() {
               <button
                 key={accent.value}
                 type="button"
-                onClick={() => dispatch(setThemeAccent(accent.value))}
+                onClick={() => handleAccentChange(accent.value)}
                 className="flex items-center gap-2"
                 aria-label={`${accent.label} accent`}
                 aria-pressed={active}

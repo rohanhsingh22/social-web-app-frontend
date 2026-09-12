@@ -62,91 +62,104 @@ export function useChannelSocket(
   }
 
   useEffect(() => {
-    const socket = createChannelSocket();
-    socketRef.current = socket;
+    let disposed = false;
+    let socket: Socket | null = null;
 
-    socket.on("connect", () => {
-      setStatus("connected");
-      setChannelMeta((current) => ({ ...current, error: null }));
-    });
-
-    socket.on("disconnect", () => {
-      setStatus("disconnected");
-      setChannelMeta((current) => ({ ...current, online: null }));
-    });
-
-    socket.io.on("reconnect_attempt", () => {
-      setStatus("reconnecting");
-    });
-
-    socket.io.on("reconnect", () => {
-      setStatus("connected");
-      joinedChannelRef.current = undefined;
-      const current = channelIdRef.current;
-      if (current) {
-        socket.emit("channel:join", { channelId: current });
-        joinedChannelRef.current = current;
+    createChannelSocket().then((createdSocket) => {
+      if (disposed) {
+        createdSocket.disconnect();
+        return;
       }
-    });
 
-    socket.on("connect_error", () => {
-      setStatus("disconnected");
-    });
+      socket = createdSocket;
+      socketRef.current = socket;
 
-    socket.on(
-      "channel:message:new",
-      (payload: ChannelMessagePayload) => {
-        handlersRef.current.onMessage?.(normalizeChannelMessage(payload));
-      },
-    );
+      socket.on("connect", () => {
+        setStatus("connected");
+        setChannelMeta((current) => ({ ...current, error: null }));
+      });
 
-    socket.on(
-      "channel:presence:update",
-      (payload: ChannelPresencePayload) => {
-        const online =
-          payload && typeof payload.online === "number" ? payload.online : null;
-        setChannelMeta((current) => ({ ...current, online }));
-        handlersRef.current.onPresence?.(payload);
-      },
-    );
+      socket.on("disconnect", () => {
+        setStatus("disconnected");
+        setChannelMeta((current) => ({ ...current, online: null }));
+      });
 
-    socket.on("channel:error", (payload: ChannelErrorPayload) => {
-      setChannelMeta((current) => ({ ...current, error: payload }));
-      handlersRef.current.onError?.(payload);
-    });
+      socket.io.on("reconnect_attempt", () => {
+        setStatus("reconnecting");
+      });
 
-    socket.on("auth:error", async (payload: { code: string; message?: string }) => {
-      setChannelMeta((current) => ({
-        ...current,
-        error: payload as ChannelErrorPayload,
-      }));
-      socket.disconnect();
+      socket.io.on("reconnect", () => {
+        setStatus("connected");
+        joinedChannelRef.current = undefined;
+        const current = channelIdRef.current;
+        if (current) {
+          socket!.emit("channel:join", { channelId: current });
+          joinedChannelRef.current = current;
+        }
+      });
 
-      const freshToken = await ensureFreshAccessToken();
-      if (freshToken) {
-        socket.auth = { token: freshToken };
-        socket.io.opts.extraHeaders = { Authorization: `Bearer ${freshToken}` };
-        socket.connect();
-      }
-    });
+      socket.on("connect_error", () => {
+        setStatus("disconnected");
+      });
 
-    socket.on("user:banned", () => {
-      setBanned(true);
-    });
+      socket.on(
+        "channel:message:new",
+        (payload: ChannelMessagePayload) => {
+          handlersRef.current.onMessage?.(normalizeChannelMessage(payload));
+        },
+      );
 
-    socket.on("user:muted", () => {
-      setMuted(true);
+      socket.on(
+        "channel:presence:update",
+        (payload: ChannelPresencePayload) => {
+          const online =
+            payload && typeof payload.online === "number" ? payload.online : null;
+          setChannelMeta((current) => ({ ...current, online }));
+          handlersRef.current.onPresence?.(payload);
+        },
+      );
+
+      socket.on("channel:error", (payload: ChannelErrorPayload) => {
+        setChannelMeta((current) => ({ ...current, error: payload }));
+        handlersRef.current.onError?.(payload);
+      });
+
+      socket.on("auth:error", async (payload: { code: string; message?: string }) => {
+        setChannelMeta((current) => ({
+          ...current,
+          error: payload as ChannelErrorPayload,
+        }));
+        socket!.disconnect();
+
+        const freshToken = await ensureFreshAccessToken();
+        if (freshToken && socket) {
+          socket.auth = { token: freshToken };
+          socket.io.opts.extraHeaders = { Authorization: `Bearer ${freshToken}` };
+          socket.connect();
+        }
+      });
+
+      socket.on("user:banned", () => {
+        setBanned(true);
+      });
+
+      socket.on("user:muted", () => {
+        setMuted(true);
+      });
     });
 
     return () => {
-      const current = joinedChannelRef.current;
-      if (current) {
-        socket.emit("channel:leave", { channelId: current });
-        joinedChannelRef.current = undefined;
+      disposed = true;
+      if (socket) {
+        const current = joinedChannelRef.current;
+        if (current) {
+          socket.emit("channel:leave", { channelId: current });
+          joinedChannelRef.current = undefined;
+        }
+        socket.disconnect();
+        socket.removeAllListeners();
+        socketRef.current = null;
       }
-      socket.disconnect();
-      socket.removeAllListeners();
-      socketRef.current = null;
     };
   }, []);
 

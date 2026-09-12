@@ -3,6 +3,7 @@
 import { baseApi } from "@/rtk/base-api";
 import {
   extractAccessToken,
+  getAccessToken,
   setAccessToken,
 } from "@/lib/auth-token";
 import { normalizeAuthSession } from "@/lib/normalizers";
@@ -24,7 +25,14 @@ export const authApi = baseApi.injectEndpoints({
     }),
     authSession: builder.query<AuthSession | null, void>({
       async queryFn(_arg, _queryApi, _extraOptions, baseQuery) {
-        const result = await baseQuery("/auth/me");
+        const result = await baseQuery(
+          getAccessToken()
+            ? "/auth/me"
+            : {
+                url: "/auth/refresh",
+                method: "POST",
+              },
+        );
 
         if (result.error) {
           const status = result.error.status;
@@ -34,6 +42,10 @@ export const authApi = baseApi.injectEndpoints({
           }
 
           return { error: result.error };
+        }
+
+        if (!getAccessToken()) {
+          setAccessToken(extractAccessToken(result.data));
         }
 
         return { data: normalizeAuthSession(result.data) };

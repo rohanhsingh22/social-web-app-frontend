@@ -1,6 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import { config } from "@/lib/config";
-import { getAccessToken } from "@/lib/auth-token";
+import { ensureFreshAccessToken } from "@/lib/auth-token";
 
 export const REALTIME_NAMESPACE = "/channels";
 
@@ -43,8 +43,8 @@ export type SendAck =
   | { ok: true; message: ChannelMessagePayload }
   | { ok: false; code: string; retryAfterMs?: number };
 
-export function createChannelSocket(): Socket {
-  const token = getAccessToken();
+export async function createChannelSocket(): Promise<Socket> {
+  const token = await ensureFreshAccessToken();
 
   return io(`${config.realtimeUrl}${REALTIME_NAMESPACE}`, {
     autoConnect: true,

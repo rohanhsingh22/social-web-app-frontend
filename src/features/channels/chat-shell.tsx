@@ -1,6 +1,5 @@
 "use client";
 
-import clsx from "clsx";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -12,8 +11,8 @@ import {
   Wifi,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ProviderLoginButton } from "@/components/auth/provider-login-button";
-import { useAuthProvidersQuery } from "@/rtk/auth/auth-api";
+import { useRouter } from "next/navigation";
+import { LogIn } from "lucide-react";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
@@ -21,17 +20,17 @@ import {
   useChannel,
   useChannelMessages,
   useChannels,
-  useDefaultChannel,
   useLazyChannelMessagesQuery,
 } from "@/features/channels/api";
 import { useChannelSocket } from "@/features/channels/use-channel-socket";
+import { ChannelList } from "@/features/channels/channel-list";
 import { channelColor } from "@/lib/channel-colors";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Channel, ChannelMessage } from "@/types/domain";
+import type { ChannelMessage } from "@/types/domain";
 
 export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const [message, setMessage] = useState("");
@@ -53,20 +52,16 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const isPinnedToBottomRef = useRef(true);
   const hasAutoScrolledRef = useRef(false);
 
+  const router = useRouter();
   const authQuery = useAuthSession();
   const channelsQuery = useChannels();
-  const defaultChannelQuery = useDefaultChannel();
   const channelQuery = useChannel(initialSlug);
-  const { data: providers = [] } = useAuthProvidersQuery();
-  const firstProvider = providers[0];
 
   const channels = channelsQuery.data ?? [];
   const activeChannel =
     initialSlug
       ? channelQuery.data ?? channels.find((channel) => channel.slug === initialSlug)
-      : defaultChannelQuery.data ??
-        channels.find((channel) => channel.isDefault) ??
-        channels[0];
+      : channels.find((channel) => channel.isDefault) ?? channels[0];
 
   const messagesQuery = useChannelMessages(activeChannel?.slug);
   const initialMessages = messagesQuery.data?.messages ?? [];
@@ -103,12 +98,10 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const isValidMessage = message.trim().length > 0 && message.trim().length <= 500;
   const hasApiError =
     channelsQuery.isError ||
-    defaultChannelQuery.isError ||
     channelQuery.isError ||
     messagesQuery.isError;
   const isChannelLoading =
     channelsQuery.isLoading ||
-    (!initialSlug && defaultChannelQuery.isLoading) ||
     (Boolean(initialSlug) && channelQuery.isLoading);
   const hasLoadedChannels = channelsQuery.isSuccess && !isChannelLoading;
   const channelNotFound =
@@ -251,15 +244,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
 
   return (
     <AppShell>
-      <div className="grid min-h-dvh bg-background lg:h-dvh lg:overflow-hidden lg:grid-cols-[280px_minmax(0,1fr)_300px]">
-        <aside className="hidden min-h-0 border-r border-line bg-surface lg:block">
-          <ChannelList
-            activeSlug={activeChannel?.slug ?? ""}
-            channels={channels}
-            isLoading={channelsQuery.isLoading}
-          />
-        </aside>
-
+      <div className="grid min-h-dvh bg-background lg:h-dvh lg:overflow-hidden lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="grid min-h-dvh grid-rows-[auto_minmax(0,1fr)_auto] bg-surface lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:overflow-hidden">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur">
             <Button
@@ -431,10 +416,15 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                     Guests can read public channels. Sending messages, profiles,
                     connections, and private chat unlock after login.
                   </p>
-                  <div className="mt-3 grid gap-3">
-                    {firstProvider ? (
-                      <ProviderLoginButton provider={firstProvider} />
-                    ) : null}
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      onClick={() => router.push("/login")}
+                      className="w-full gap-2"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      Login
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -497,9 +487,16 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                 ? "You can read public channel history and manage your profile."
                 : "Public read-only channel access is open. Login is required for profile and private features."}
             </p>
-            {!isLoggedIn && firstProvider ? (
+            {!isLoggedIn ? (
               <div className="mt-4">
-                <ProviderLoginButton provider={firstProvider} />
+                <Button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="w-full gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
               </div>
             ) : null}
           </div>
@@ -521,69 +518,6 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
         </SheetContent>
       </Sheet>
     </AppShell>
-  );
-}
-
-function ChannelList({
-  activeSlug,
-  channels,
-  isLoading,
-  onSelect,
-  fullHeight = false,
-}: {
-  activeSlug: string;
-  channels: Channel[];
-  isLoading: boolean;
-  onSelect?: () => void;
-  fullHeight?: boolean;
-}) {
-  return (
-    <div className={clsx("flex flex-col", fullHeight ? "h-dvh" : "h-full")}>
-      <div className="border-b border-line p-4">
-        <h2 className="text-base font-bold text-ink">Channels</h2>
-        <p className="mt-1 text-xs text-ink-subtle">Public live rooms</p>
-      </div>
-      <div className="chat-scrollbar flex-1 overflow-y-auto p-2">
-        {isLoading ? (
-          <div className="space-y-2 p-2">
-            {[1, 2, 3, 4, 5].map((item) => (
-              <Skeleton key={item} className="h-11 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : null}
-
-        {channels.map((channel) => {
-          const color = channelColor(channel.type);
-          const active = activeSlug === channel.slug;
-
-          return (
-            <Link
-              key={channel.id}
-              href={channel.isDefault ? "/" : `/channels/${channel.slug}`}
-              onClick={onSelect}
-              className={clsx(
-                "mb-1 flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors hover:bg-surface-hover",
-                active && "bg-surface-hover",
-              )}
-            >
-              <span
-                className={cn(
-                  "grid h-9 w-9 place-items-center rounded-lg",
-                  color.bg,
-                  color.text,
-                )}
-              >
-                <Hash className="h-4 w-4" aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1 truncate font-semibold text-ink">
-                {channel.name}
-              </span>
-              <span className="text-xs text-ink-subtle">{channel.onlineCount}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 

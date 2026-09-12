@@ -1,8 +1,8 @@
 "use client";
 
-import { LockKeyhole } from "lucide-react";
-import { ProviderLoginButton } from "@/components/auth/provider-login-button";
-import { useAuthProvidersQuery } from "@/rtk/auth/auth-api";
+import { useRouter } from "next/navigation";
+import { LockKeyhole, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function LockedPanel({
   title,
@@ -11,8 +11,7 @@ export function LockedPanel({
   title: string;
   message: string;
 }) {
-  const { data: providers = [] } = useAuthProvidersQuery();
-  const firstProvider = providers[0];
+  const router = useRouter();
 
   return (
     <section className="grid min-h-dvh place-items-center px-4 py-8">
@@ -23,7 +22,10 @@ export function LockedPanel({
         <h1 className="text-2xl font-bold text-ink">{title}</h1>
         <p className="mt-2 text-sm leading-6 text-ink-muted">{message}</p>
         <div className="mt-6">
-          {firstProvider ? <ProviderLoginButton provider={firstProvider} /> : null}
+          <Button onClick={() => router.push("/login")} className="w-full gap-2">
+            <LogIn className="h-4 w-4" />
+            Login
+          </Button>
         </div>
       </div>
     </section>

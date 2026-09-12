@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
-import { useUpdateMyProfile } from "@/features/profile/api";
+import { useMyProfile, useUpdateMyProfile } from "@/features/profile/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +14,16 @@ import { Select } from "@/components/ui/select";
 export function OnboardingPage() {
   const router = useRouter();
   const authQuery = useAuthSession();
+  const profileQuery = useMyProfile(Boolean(authQuery.data));
   const updateProfile = useUpdateMyProfile();
+  const profile = profileQuery.data;
+  const initializedRef = useRef(false);
+
   const [form, setForm] = useState({
-    username: "",
-    dob: "",
-    region: "",
-    primaryLanguage: "English",
+    username: profile?.username ?? "",
+    dob: profile?.dob ?? "",
+    region: profile?.region ?? "",
+    primaryLanguage: profile?.primaryLanguage ?? "English",
   });
 
   const canSubmit =
@@ -29,10 +33,22 @@ export function OnboardingPage() {
     form.primaryLanguage.trim().length > 0;
 
   useEffect(() => {
-    if (authQuery.data?.profile?.isComplete) {
+    if (profile && !initializedRef.current) {
+      initializedRef.current = true;
+      setForm({
+        username: profile.username ?? "",
+        dob: profile.dob ?? "",
+        region: profile.region ?? "",
+        primaryLanguage: profile.primaryLanguage ?? "English",
+      });
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (profile?.isComplete) {
       router.replace("/profile");
     }
-  }, [authQuery.data?.profile?.isComplete, router]);
+  }, [profile?.isComplete, router]);
 
   async function submit() {
     if (!authQuery.data || !canSubmit) {
@@ -50,7 +66,7 @@ export function OnboardingPage() {
     router.push("/profile");
   }
 
-  if (authQuery.isLoading) {
+  if (authQuery.isLoading || profileQuery.isLoading) {
     return (
       <AppShell>
         <section className="mx-auto max-w-2xl px-4 py-6">
@@ -67,7 +83,7 @@ export function OnboardingPage() {
       <AppShell>
         <LockedPanel
           title="Login required"
-          message="Onboarding starts after Facebook login creates an app session."
+          message="Login to complete your profile setup."
         />
       </AppShell>
     );

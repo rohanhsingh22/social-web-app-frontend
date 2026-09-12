@@ -30,7 +30,7 @@ export function PublicProfilePage({ username }: { username: string }) {
       <AppShell>
         <LockedPanel
           title="Login required"
-          message={`Login with Facebook to view @${username}'s profile.`}
+          message={`Login to view @${username}'s profile.`}
         />
       </AppShell>
     );

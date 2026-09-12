@@ -35,7 +35,7 @@ export function ProviderLoginButton({
     <button
       type="button"
       onClick={startLogin}
-      className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold shadow-sm transition-[transform,box-shadow,background-color] duration-150 ease-out hover:shadow-md active:scale-[0.97] ${styles}`}
+      className={`inline-flex h-12 w-full items-center justify-center gap-3 rounded-lg px-4 text-sm font-semibold shadow-sm transition-[transform,box-shadow,background-color] duration-150 ease-out hover:shadow-md active:scale-[0.97] ${styles}`}
     >
       <Icon className="h-5 w-5" aria-hidden />
       Continue with {provider.displayName}

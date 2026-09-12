@@ -13,6 +13,7 @@ o clean up before launch. Confidence: 0.7
 - Does not want backend code modified; work should be confined to the frontend. Reading from the backend is fine, but never write to or modify it. Confidence: 0.9
 - Prefers shared cached query hooks (e.g. RTK Query's `useAuthSession`) over re-fetching the same data (like the current user) in each component, to avoid redundant network requests. Confidence: 0.6
 - Prefers building standalone/reusable components first and integrating them into pages afterward, rather than wiring everything inline in one pass. Confidence: 0.6
+- Prefers minimal, targeted solutions that solve the specific problem at hand over comprehensive pre-built components that bundle extra features beyond what's needed (e.g. a full scene setup with effects) when a lighter approach suffices. Confidence: 0.65
 - When the same inline JSX pattern repeats across files, prefers extracting it into a single shared component and retrofitting all usages rather than leaving duplication in place. Confidence: 0.75
 - Prefers UI components to accept explicit `width`/`height` props for configurable dimensions instead of relying solely on fixed CSS classes. Confidence: 0.7
 - Prefers square avatars (no rounded corners) with a static solid brand-colored border (like BGMI), no gradient ring, no animation/glow effects, and a fallback initial letter when no image is available. Confidence: 0.75
@@ -26,3 +27,12 @@ o clean up before launch. Confidence: 0.7
 - Prefers runtime HTTP verification of served static assets (checking status code, content-type, and byte size via curl) in addition to typecheck/lint/build, to confirm assets are actually served correctly rather than relying on build success alone. Confidence: 0.65
 - When a fresh dev server can't bind (e.g. port conflict / EADDRINUSE), prefers to leverage an already-running dev server (with HMR, serving `public/` from disk) for runtime verification rather than skipping runtime checks. Confidence: 0.55
 - Does not want changes that contradict project documentation (agent.md, doc/frontend-chat-app.txt, doc/backend-chat-app.txt) unless explicitly requested; when a requested change conflicts with the docs, confirm with the user before proceeding. Confidence: 0.9
+- Wants the agent to proactively read and follow project documentation files (engineering rules, frontend rules, design system, architecture) as the primary source of truth for design and engineering decisions, not just avoid contradicting them. Confidence: 0.7
+- Prefers forms to pre-fill with existing user data when available, rather than starting empty — users shouldn't have to re-enter data they already have. Confidence: 0.7
+- When documenting or analyzing a project, prefers to clearly separate what is currently implemented from what is planned/desired, never mixing the two. Confidence: 0.85
+- Prefers exact file paths in technical documentation and analysis rather than vague references to file locations. Confidence: 0.8
+- Prefers analysis tasks to be facts-only with no inference, no recommendations, and no speculation — if something cannot be confirmed, mark it "Unknown". Confidence: 0.85
+- Prefers status/completion reports to include explicit evidence (e.g. file paths, code references) rather than bare assertions. Confidence: 0.75
+- Prefers full-screen immersive layouts for auth/transitional pages (login, auth callback, etc.) that use the full viewport with rich visuals rather than small centered cards. Confidence: 0.65
+- Prefers consistent visual branding and design language across all auth-related pages (login, signup, auth callback, onboarding) so they feel like a cohesive flow. Confidence: 0.65
+- Prefers visible countdown timers (e.g., 3-2-1) for automatic redirects so users know exactly when they'll be navigated away. Confidence: 0.6
