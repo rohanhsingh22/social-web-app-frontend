@@ -36,6 +36,67 @@ export type ChannelMessagePage = {
   pageInfo: PageInfo;
 };
 
+export type DmConversationMember = {
+  userId: string;
+  isSelf: boolean;
+  profile: {
+    userId: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    bio: string | null;
+    ageGroup: string | null;
+    region: string | null;
+    primaryLanguage: string | null;
+    languages: string[];
+  };
+};
+
+export type DmConversation = {
+  id: string;
+  type: "direct";
+  createdAt: string;
+  updatedAt: string;
+  otherUser: {
+    userId: string;
+    profile: DmConversationMember["profile"];
+  };
+  latestMessage: DirectMessage | null;
+};
+
+export type DirectMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  status: "active" | "deleted" | "hidden" | "flagged";
+  createdAt: string;
+  sender: {
+    id: string;
+    profile: {
+      username: string;
+      displayName: string;
+      avatarUrl: string | null;
+    } | null;
+  };
+};
+
+export type DmMessagePage = {
+  conversation: {
+    id: string;
+    type: "direct";
+    createdAt: string;
+    updatedAt: string;
+    members: Array<{
+      userId: string;
+      isSelf: boolean;
+      profile: DmConversationMember["profile"];
+    }>;
+  };
+  messages: DirectMessage[];
+  pageInfo: PageInfo;
+};
+
 export type ConnectionState =
   | "not_connected"
   | "request_sent"
@@ -43,10 +104,40 @@ export type ConnectionState =
   | "connected"
   | "blocked";
 
+export type ConnectionProfile = {
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  bio?: string;
+  ageGroup?: string;
+  region?: string;
+  primaryLanguage?: string;
+  languages: string[];
+};
+
+export type ConnectionUser = {
+  id: string;
+  profile: ConnectionProfile | null;
+};
+
+export type ConnectionRequest = {
+  id: string;
+  status: "pending" | "accepted" | "blocked" | "cancelled";
+  requesterId: string;
+  receiverId: string;
+  createdAt: string;
+  updatedAt: string;
+  otherUser: ConnectionUser;
+};
+
 export type Connection = {
   id: string;
-  user: UserSummary;
-  state: ConnectionState;
+  status: "pending" | "accepted" | "blocked" | "cancelled";
+  requesterId: string;
+  receiverId: string;
+  createdAt: string;
+  updatedAt: string;
+  otherUser: ConnectionUser;
 };
 
 export type CharacterConfig = {
@@ -74,6 +165,35 @@ export type Profile = UserSummary & {
   primaryLanguage?: string;
   languages: string[];
   isComplete: boolean;
+  publicUserId?: string;
+};
+
+export type SearchUserProfile = {
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  bio?: string;
+  ageGroup?: string;
+  region?: string;
+  primaryLanguage?: string;
+  languages: string[];
+};
+
+export type SearchUserConnection = {
+  id: string;
+  status: "pending" | "accepted" | "blocked" | "cancelled";
+  direction: "sent" | "received" | null;
+};
+
+export type SearchUserResult = {
+  id: string;
+  profile: SearchUserProfile;
+  connection: SearchUserConnection | null;
+};
+
+export type SearchUsersResponse = {
+  query: string;
+  users: SearchUserResult[];
 };
 
 export type AuthSession = {

@@ -48,6 +48,17 @@ const baseQueryWithReauth: BaseQueryFn<
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["AuthSession", "Channels", "Channel", "ChannelMessages", "Profile", "Settings"],
+  tagTypes: [
+    "AuthSession",
+    "Channels",
+    "Channel",
+    "ChannelMessages",
+    "Profile",
+    "Settings",
+    "UserSearch",
+    "Connections",
+    "DmConversations",
+    "DmMessages",
+  ],
   endpoints: () => ({}),
 });

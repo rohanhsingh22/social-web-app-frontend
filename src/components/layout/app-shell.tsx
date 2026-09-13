@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Lightbulb, MessageCircle, MessageSquare, Settings, UsersRound } from "lucide-react";
+import { Home, Lightbulb, MessageSquare, Settings, UsersRound } from "lucide-react";
+import logoDark from "@/assets/app-logo/HiRotili Logo Dark.png";
+import logoLight from "@/assets/app-logo/HiRotoli Logo Light.png";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ChannelList } from "@/features/channels/channel-list";
@@ -29,14 +31,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-background text-ink lg:h-dvh lg:overflow-hidden">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-surface lg:flex lg:flex-col">
-        <div className="flex h-16 items-center gap-3 px-4">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-hover text-on-brand shadow-lg shadow-brand/20">
-            <MessageCircle className="h-5 w-5" aria-hidden />
-          </div>
-          <span className="text-base font-bold text-ink">HiRotoli</span>
+        <div className="flex h-16 items-center gap-2 px-4">
+          <img
+            src={logoLight}
+            alt="HiRotoli"
+            className="h-9 w-9 shrink-0 object-contain dark:hidden"
+          />
+
+          <img
+            src={logoDark}
+            alt="HiRotoli"
+            className="hidden h-9 w-9 shrink-0 object-contain dark:block"
+          />
+
+          <span
+            className="
+              bg-linear-to-r from-[#2F9BFF] via-[#5B3FF5] to-[#D94FE8]
+              bg-clip-text text-lg font-extrabold tracking-tight text-transparent
+            "
+          >
+            HiRotoli
+          </span>
         </div>
 
-        <nav className="flex flex-col gap-1 px-3 py-4" aria-label="Main navigation">
+        <nav className="flex flex-col gap-1 px-3 py-2" aria-label="Main navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active =
@@ -61,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col px-3 pb-4">
           <h3 className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Channels
           </h3>

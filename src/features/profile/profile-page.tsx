@@ -1,6 +1,8 @@
 import { Suspense, useEffect, useState } from "react";
 import {
   CalendarDays,
+  Copy,
+  Check,
   Globe,
   LogOut,
   MapPin,
@@ -336,7 +338,7 @@ export function ProfilePage() {
                         </div>
 
                         <p className="mt-1 truncate text-sm text-ink-muted">
-                          @{currentProfile.username}
+                          {currentProfile.publicUserId}
                         </p>
                       </div>
                     </div>
@@ -487,19 +489,10 @@ export function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Username */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
-                      <UserRound className="h-4 w-4 text-ink-muted" />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-ink">Username</p>
-                      <p className="truncate text-[11px] text-ink-muted">
-                        @{currentProfile.username}
-                      </p>
-                    </div>
-                  </div>
+                  {/* HiRotoli ID */}
+                  {currentProfile.publicUserId ? (
+                    <HiRotoliIdDisplay publicUserId={currentProfile.publicUserId} />
+                  ) : null}
 
                   {/* Location */}
                   {currentProfile.region ? (
@@ -972,5 +965,43 @@ export function ProfilePage() {
         </SheetContent>
       </Sheet>
     </AppShell>
+  );
+}
+
+function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(publicUserId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard may be unavailable; ignore silently.
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+        <UserRound className="h-4 w-4 text-ink-muted" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-ink">HiRotoli ID</p>
+        <p className="truncate font-mono text-[11px] text-ink-muted">
+          {publicUserId}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label="Copy HiRotoli ID"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-ink-muted transition hover:bg-surface-hover hover:text-ink"
+      >
+        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+    </div>
   );
 }

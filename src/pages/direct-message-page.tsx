@@ -1,8 +1,11 @@
-import { useParams } from "react-router-dom";
-import { DirectMessagePage } from "@/features/direct-messages/direct-message-page";
+import { Navigate, useParams } from "react-router-dom";
 
 export default function ConversationPage() {
   const { conversationId = "" } = useParams<{ conversationId: string }>();
 
-  return <DirectMessagePage conversationId={conversationId} />;
+  if (!conversationId) {
+    return <Navigate to="/messages" replace />;
+  }
+
+  return <Navigate to={`/messages/${conversationId}`} replace />;
 }

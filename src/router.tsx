@@ -21,6 +21,7 @@ export function AppRoutes() {
       <Route path="/home" element={<HomePage />} />
       <Route path="/thoughts" element={<ThoughtsPage />} />
       <Route path="/messages" element={<MessagesPage />} />
+      <Route path="/messages/:conversationId" element={<MessagesPage />} />
       <Route path="/channels/:slug" element={<ChannelPage />} />
       <Route path="/auth/callback/success" element={<AuthCallbackSuccessPage />} />
       <Route path="/users/:username" element={<UserProfilePage />} />

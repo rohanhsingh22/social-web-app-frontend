@@ -3,6 +3,7 @@ import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import { usePublicProfile } from "@/features/profile/api";
+import { useCreateConnectionRequestMutation } from "@/rtk/connections/connections-api";
 import { Button } from "@/components/ui/button";
 import { CharacterScene } from "@/components/character/character-scene";
 import { ProfileStatsCard } from "@/components/profile/profile-stats-card";
@@ -12,6 +13,7 @@ export function PublicProfilePage({ username }: { username: string }) {
   const authQuery = useAuthSession();
   const isLoggedIn = Boolean(authQuery.data);
   const profileQuery = usePublicProfile(username, isLoggedIn);
+  const [createRequest, createState] = useCreateConnectionRequestMutation();
 
   if (authQuery.isLoading) {
     return (
@@ -74,7 +76,7 @@ export function PublicProfilePage({ username }: { username: string }) {
                 {profile.displayName}
               </h1>
               <p className="flex items-center gap-1.5 text-sm text-white/60">
-                <span className="truncate">@{profile.username}</span>
+                <span className="truncate">@{profile.publicUserId ?? profile.username}</span>
                 {profile.role && profile.role !== "user" && (
                   <span className="inline-flex items-center gap-1 rounded bg-brand/30 px-1.5 py-0.5 text-[10px] font-semibold text-brand backdrop-blur-sm">
                     <Shield className="h-3 w-3" aria-hidden />
@@ -88,8 +90,14 @@ export function PublicProfilePage({ username }: { username: string }) {
             <Button
               type="button"
               className="bg-brand hover:bg-brand-hover"
+              disabled={createState.isLoading || !profile.publicUserId}
+              onClick={() => {
+                if (profile.publicUserId) {
+                  void createRequest({ receiverUserId: profile.publicUserId });
+                }
+              }}
             >
-              Connect
+              {createState.isLoading ? "Sending…" : "Connect"}
             </Button>
           </div>
         </header>
