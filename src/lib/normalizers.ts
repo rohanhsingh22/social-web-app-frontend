@@ -97,6 +97,7 @@ export function normalizeUser(value: unknown): UserSummary {
   return {
     id: asString(record.id ?? record.userId ?? profile.userId, "unknown"),
     username: asString(record.username ?? profile.username, "unknown"),
+    publicUserId: asOptionalString(record.publicUserId ?? record.public_user_id ?? profile.publicUserId ?? profile.public_user_id),
     displayName: asString(
       record.displayName ?? record.display_name ?? profile.displayName ?? profile.display_name,
       "Unknown user",

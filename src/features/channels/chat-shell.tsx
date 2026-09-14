@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   Hash,
@@ -11,6 +11,12 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LogIn } from "lucide-react";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import {
@@ -366,20 +372,72 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
 
               {visibleMessages.map((item) => (
                 <article key={item.id} className="flex gap-3">
-                  <ShowcaseAvatar
-                    src={item.sender.avatarUrl}
-                    alt={item.sender.displayName}
-                    width={40}
-                    height={40}
-                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="cursor-pointer rounded-full p-0 shadow-none outline-none focus-visible:ring-0"
+                        aria-label={`View @${item.sender.username}'s profile`}
+                      >
+                        <ShowcaseAvatar
+                          src={item.sender.avatarUrl}
+                          alt={item.sender.displayName}
+                          width={40}
+                          height={40}
+                        />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      side="right"
+                      sideOffset={8}
+                      align="start"
+                      className="w-56 p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ShowcaseAvatar
+                          src={item.sender.avatarUrl}
+                          alt={item.sender.displayName}
+                          width={48}
+                          height={48}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-ink">
+                            {item.sender.displayName}
+                          </p>
+                          <p className="truncate text-xs text-ink-subtle">
+                            @{item.sender.username}
+                          </p>
+                        </div>
+                      </div>
+                      {item.sender.role && item.sender.role !== "user" ? (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <ShieldCheck className="h-3 w-3 text-brand" />
+                          <span className="text-xs font-medium text-ink-subtle">
+                            {item.sender.role}
+                          </span>
+                        </div>
+                      ) : null}
+                      <DropdownMenuSeparator />
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="w-full justify-center bg-brand text-on-brand hover:bg-brand-hover"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (item.sender.publicUserId) {
+                            void navigate(`/profile/${item.sender.publicUserId}`);
+                          }
+                        }}
+                      >
+                        Visit profile
+                      </Button>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`/users/${item.sender.username}`}
-                        className="text-sm font-semibold text-ink hover:underline"
-                      >
+                      <span className="text-sm font-semibold text-ink">
                         {item.sender.displayName}
-                      </Link>
+                      </span>
                       {item.sender.role && item.sender.role !== "user" ? (
                         <span className="inline-flex items-center gap-1 rounded bg-brand-soft px-1.5 py-0.5 text-[11px] font-semibold text-brand-ink">
                           <ShieldCheck className="h-3 w-3" aria-hidden />

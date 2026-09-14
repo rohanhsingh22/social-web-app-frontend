@@ -29,10 +29,10 @@ export const profileApi = baseApi.injectEndpoints({
       providesTags: ["Profile"],
     }),
     publicProfile: builder.query<Profile, string>({
-      query: (username) => `/profiles/${username}`,
+      query: (publicUserId) => `/profiles/${publicUserId}`,
       transformResponse: (response: unknown) => normalizeProfile(response),
-      providesTags: (_result, _error, username) => [
-        { type: "Profile", id: username },
+      providesTags: (_result, _error, publicUserId) => [
+        { type: "Profile", id: publicUserId },
       ],
     }),
     updateMyProfile: builder.mutation<Profile, ProfileUpdateInput>({
@@ -57,8 +57,8 @@ export function useMyProfile(enabled: boolean) {
   return useMyProfileQuery(enabled ? undefined : skipToken);
 }
 
-export function usePublicProfile(username: string, enabled: boolean) {
-  return usePublicProfileQuery(enabled && username ? username : skipToken);
+export function usePublicProfile(publicUserId: string, enabled: boolean) {
+  return usePublicProfileQuery(enabled && publicUserId ? publicUserId : skipToken);
 }
 
 export function useUpdateMyProfile() {

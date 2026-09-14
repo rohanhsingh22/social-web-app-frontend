@@ -12,7 +12,6 @@ import OnboardingPage from "@/pages/onboarding-page";
 import ProfilePage from "@/pages/profile-page";
 import SettingsPage from "@/pages/settings-page";
 import ThoughtsPage from "@/pages/thoughts-page";
-import UserProfilePage from "@/pages/user-profile-page";
 
 export function AppRoutes() {
   return (
@@ -24,11 +23,11 @@ export function AppRoutes() {
       <Route path="/messages/:conversationId" element={<MessagesPage />} />
       <Route path="/channels/:slug" element={<ChannelPage />} />
       <Route path="/auth/callback/success" element={<AuthCallbackSuccessPage />} />
-      <Route path="/users/:username" element={<UserProfilePage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/:publicUserId" element={<ProfilePage />} />
       <Route path="/connections" element={<ConnectionsPage />} />
       <Route path="/connections/:conversationId" element={<DirectMessagePage />} />
       <Route path="*" element={<NotFoundPage />} />

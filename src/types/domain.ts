@@ -3,6 +3,7 @@ export type UserSummary = {
   username: string;
   displayName: string;
   avatarUrl?: string;
+  publicUserId?: string;
   role?: "user" | "moderator" | "admin";
   status?: "active" | "muted" | "banned" | "deleted";
 };

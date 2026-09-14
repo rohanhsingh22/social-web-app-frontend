@@ -12,12 +12,12 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession, useLogout } from "@/features/auth/api";
-import { useMyProfile, useUpdateMyProfile } from "@/features/profile/api";
+import { useMyProfile, usePublicProfile, useUpdateMyProfile } from "@/features/profile/api";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/character/avatar";
 import { Canvas } from "@react-three/fiber";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import { cn } from "@/lib/utils";
 
 import {
   DEFAULT_CHARACTER_CONFIG,
@@ -121,11 +122,18 @@ function toFormState(profile: Profile): ProfileFormState {
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const { publicUserId } = useParams<{ publicUserId?: string }>();
+  const isOwnProfile = !publicUserId;
 
   const authQuery = useAuthSession();
   const isLoggedIn = Boolean(authQuery.data);
 
-  const profileQuery = useMyProfile(isLoggedIn);
+  const ownProfileQuery = useMyProfile(isLoggedIn && isOwnProfile);
+  const publicProfileQuery = usePublicProfile(
+    publicUserId ?? "",
+    isLoggedIn && !isOwnProfile,
+  );
+  const profileQuery = isOwnProfile ? ownProfileQuery : publicProfileQuery;
   const updateProfile = useUpdateMyProfile();
   const logout = useLogout();
 
@@ -262,7 +270,7 @@ export function ProfilePage() {
 
       <section className="h-full w-full overflow-hidden bg-background">
         <div className="h-full p-4 lg:p-6">
-          <div className="grid h-full min-h-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className={cn("grid h-full min-h-0 grid-cols-1 gap-5", isOwnProfile ? "lg:grid-cols-[minmax(0,1fr)_420px]" : "lg:grid-cols-1")}>
             {/* ======================================================
                 LEFT / MAIN PROFILE
                 ====================================================== */}
@@ -343,15 +351,27 @@ export function ProfilePage() {
                       </div>
                     </div>
 
-                    {/* Edit */}
-                    <Button
-                      type="button"
-                      onClick={openEditor}
-                      className="shrink-0"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit Profile
-                    </Button>
+                    {isOwnProfile ? (
+                      <Button
+                        type="button"
+                        onClick={openEditor}
+                        className="shrink-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit Profile
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="shrink-0 border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                        onClick={() => {
+                          /* dummy — no navigation */
+                        }}
+                      >
+                        Connect
+                      </Button>
+                    )}
                   </div>
 
                   {/* ------------------------------------------------
@@ -462,6 +482,7 @@ export function ProfilePage() {
                 RIGHT SIDEBAR
                 ====================================================== */}
 
+            {isOwnProfile ? (
             <aside className="flex min-h-0 flex-col gap-4 overflow-hidden">
               {/* --------------------------------------------------
                   PROFILE SETTINGS / DETAILS
@@ -630,6 +651,7 @@ export function ProfilePage() {
                 </Button>
               </div> */}
             </aside>
+            ) : null}
           </div>
         </div>
       </section>
@@ -638,6 +660,7 @@ export function ProfilePage() {
           EDIT PROFILE SHEET
           ============================================================ */}
 
+      {isOwnProfile ? (
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="overflow-y-auto">
           <SheetHeader>
@@ -964,6 +987,7 @@ export function ProfilePage() {
           </div>
         </SheetContent>
       </Sheet>
+      ) : null}
     </AppShell>
   );
 }
