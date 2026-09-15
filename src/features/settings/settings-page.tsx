@@ -570,6 +570,19 @@ import {
   useLogout,
 } from "@/features/auth/api";
 
+import { useMyProfile } from "@/features/profile/api";
+import {
+  useTolisQuery,
+  useSelectToliMutation,
+} from "@/features/toli/api";
+import { useUpdateProfilePictureMutation } from "@/rtk/profile/profile-api";
+import { ToliBadge } from "@/components/toli/toli-badge";
+import { ToliPicker } from "@/features/toli/toli-picker";
+import {
+  ToliAvatarPicker,
+  PROVIDER_AVATAR_VALUE,
+} from "@/features/toli/toli-avatar-picker";
+
 import {
   useSettingsQuery,
   useUpdateSettingsMutation,
@@ -595,6 +608,7 @@ import {
 
 type SectionId =
   | "appearance"
+  | "toli"
   | "privacy"
   | "account";
 
@@ -614,6 +628,12 @@ const settingSections: {
     label: "Appearance",
     description: "Theme & personalization",
     icon: Palette,
+  },
+  {
+    id: "toli",
+    label: "My Toli",
+    description: "Clan identity & avatar",
+    icon: Users,
   },
   {
     id: "privacy",
@@ -846,6 +866,138 @@ function VisibilityItem({
         checked={checked}
         onCheckedChange={onChange}
       />
+    </div>
+  );
+}
+
+
+/* =========================================================
+   TOLI SECTION
+========================================================= */
+
+function ToliSettingsSection() {
+  const profileQuery = useMyProfile(true);
+  const profile = profileQuery.data;
+  const tolisQuery = useTolisQuery();
+  const [selectToli, selectState] = useSelectToliMutation();
+  const [updatePicture, pictureState] = useUpdateProfilePictureMutation();
+
+  const [toliId, setToliId] = useState<string | null | undefined>(undefined);
+  const [avatarKey, setAvatarKey] = useState<string | null | undefined>(
+    undefined,
+  );
+  const [saved, setSaved] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const effectiveToliId = toliId ?? profile?.toli?.id ?? null;
+  const targetedToli = tolisQuery.data?.find(
+    (toli) => toli.id === effectiveToliId,
+  );
+  const changed =
+    (toliId !== undefined && toliId !== (profile?.toli?.id ?? null)) ||
+    (avatarKey !== undefined &&
+      avatarKey !== (profile?.profilePicture?.toliAvatarKey ?? null));
+  const saving = selectState.isLoading || pictureState.isLoading;
+
+  async function handleSave() {
+    if (!changed || saving) {
+      return;
+    }
+
+    setFailed(false);
+
+    try {
+      if (toliId !== undefined && toliId !== (profile?.toli?.id ?? null)) {
+        await selectToli({ toliId }).unwrap();
+      }
+
+      const finalToliId = toliId ?? profile?.toli?.id ?? null;
+
+      if (finalToliId && avatarKey && avatarKey !== PROVIDER_AVATAR_VALUE) {
+        await updatePicture({ type: "toli", avatarKey }).unwrap();
+      } else if (
+        avatarKey === PROVIDER_AVATAR_VALUE &&
+        profile?.profilePicture?.type === "toli"
+      ) {
+        await updatePicture({ type: "provider" }).unwrap();
+      }
+
+      setToliId(undefined);
+      setAvatarKey(undefined);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setFailed(true);
+    }
+  }
+
+  if (profileQuery.isLoading || !profile) {
+    return <Skeleton className="h-64 w-full rounded-2xl" />;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <SectionLabel>My Toli</SectionLabel>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <h2 className="text-2xl font-black tracking-tight text-ink">
+            Clan identity.
+          </h2>
+          {profile.toli ? <ToliBadge name={profile.toli.name} /> : null}
+        </div>
+        <p className="mt-1 text-xs text-ink-subtle">
+          One Toli per member. Switching Tolies resets a Toli avatar back to
+          your login photo until you pick one for the new Toli.
+        </p>
+      </div>
+
+      <Card className="rounded-2xl border-line shadow-none">
+        <CardContent className="p-5">
+          {tolisQuery.isLoading ? (
+            <p className="text-xs text-ink-muted">Loading Tolies...</p>
+          ) : (
+            <ToliPicker
+              tolis={tolisQuery.data ?? []}
+              value={effectiveToliId}
+              onChange={(id) => {
+                setToliId(id);
+                setAvatarKey(null);
+                setSaved(false);
+              }}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {targetedToli ? (
+        <Card className="rounded-2xl border-line shadow-none">
+          <CardContent className="p-5">
+            <ToliAvatarPicker
+              avatars={targetedToli.avatars}
+              toliName={targetedToli.name}
+              value={avatarKey ?? profile.profilePicture?.toliAvatarKey ?? null}
+              onChange={(key) => {
+                setAvatarKey(key);
+                setSaved(false);
+              }}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {failed ? (
+        <p className="rounded-xl border border-danger bg-danger-soft p-3 text-sm text-danger-ink">
+          Could not save your Toli. Please try again.
+        </p>
+      ) : null}
+
+      <Button
+        type="button"
+        onClick={handleSave}
+        disabled={!changed || saving}
+      >
+        {saving ? "Saving..." : saved ? "Saved!" : "Save Toli"}
+      </Button>
     </div>
   );
 }
@@ -1425,6 +1577,13 @@ export function SettingsPage() {
 
                 </div>
               )}
+
+
+              {/* =================================================
+                  TOLI
+              ================================================= */}
+
+              {activeSection === "toli" && <ToliSettingsSection />}
 
 
               {/* =================================================

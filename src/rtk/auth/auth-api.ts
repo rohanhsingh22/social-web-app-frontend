@@ -1,8 +1,9 @@
 import { baseApi } from "@/rtk/base-api";
 import {
-  extractAccessToken,
   getAccessToken,
+  refreshSessionOnce,
   setAccessToken,
+  type RefreshOutcome,
 } from "@/lib/auth-token";
 import { normalizeAuthSession } from "@/lib/normalizers";
 import type { AuthSession } from "@/types/domain";
@@ -11,6 +12,20 @@ export type AuthProviderInfo = {
   id: string;
   displayName: string;
 };
+
+function toSessionResult(outcome: RefreshOutcome) {
+  if (outcome.status === "ok") {
+    return { data: normalizeAuthSession(outcome.body) };
+  }
+
+  if (outcome.status === "unauthorized") {
+    return { data: null };
+  }
+
+  return {
+    error: { status: "FETCH_ERROR" as const, error: "Session refresh failed" },
+  };
+}
 
 export const authApi = baseApi.injectEndpoints({
   overrideExisting: true,
@@ -23,53 +38,33 @@ export const authApi = baseApi.injectEndpoints({
     }),
     authSession: builder.query<AuthSession | null, void>({
       async queryFn(_arg, _queryApi, _extraOptions, baseQuery) {
-        const result = await baseQuery(
-          getAccessToken()
-            ? "/auth/me"
-            : {
-                url: "/auth/refresh",
-                method: "POST",
-              },
-        );
+        if (getAccessToken()) {
+          const result = await baseQuery("/auth/me");
 
-        if (result.error) {
-          const status = result.error.status;
+          if (result.error) {
+            const status = result.error.status;
 
-          if (status === 401 || status === 403) {
-            return { data: null };
+            if (status === 401 || status === 403) {
+              return { data: null };
+            }
+
+            return { error: result.error };
           }
 
-          return { error: result.error };
+          return { data: normalizeAuthSession(result.data) };
         }
 
-        if (!getAccessToken()) {
-          setAccessToken(extractAccessToken(result.data));
-        }
-
-        return { data: normalizeAuthSession(result.data) };
+        // No token in memory: join the single shared refresh instead of
+        // firing a request that would race the 401-retry path.
+        return toSessionResult(await refreshSessionOnce());
       },
       providesTags: ["AuthSession"],
     }),
     refreshSession: builder.mutation<AuthSession | null, void>({
-      async queryFn(_arg, _queryApi, _extraOptions, baseQuery) {
-        const result = await baseQuery({
-          url: "/auth/refresh",
-          method: "POST",
-        });
-
-        if (result.error) {
-          const status = result.error.status;
-
-          if (status === 401 || status === 403) {
-            return { data: null };
-          }
-
-          return { error: result.error };
-        }
-
-        setAccessToken(extractAccessToken(result.data));
-
-        return { data: normalizeAuthSession(result.data) };
+      async queryFn() {
+        // Forced rotation (no expiry short-circuit), still shared when
+        // concurrent callers are already refreshing.
+        return toSessionResult(await refreshSessionOnce());
       },
       invalidatesTags: ["AuthSession"],
     }),

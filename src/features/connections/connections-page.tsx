@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import { SenderAvatar } from "@/components/common/sender-avatar";
+import { ToliBadge } from "@/components/toli/toli-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -209,15 +210,18 @@ function ConnectionCard({ connection }: { connection: Connection }) {
   return (
     <>
       <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-        <ShowcaseAvatar
-          src={profile?.avatarUrl}
-          alt={profile?.displayName ?? "User"}
-          width={44}
-          height={44}
-        />
+        {profile ? (
+          <SenderAvatar sender={profile} size={44} />
+        ) : (
+          <SenderAvatar
+            sender={{ displayName: "Unknown user", avatarUrl: undefined }}
+            size={44}
+          />
+        )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-ink">
+          <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
             {displayName}
+            {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
           </p>
           <p className="truncate text-sm text-ink-muted">
             @{profile?.username ?? "unknown"}
@@ -288,15 +292,18 @@ function ReceivedRequestCard({ request }: { request: ConnectionRequest }) {
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      <ShowcaseAvatar
-        src={profile?.avatarUrl}
-        alt={profile?.displayName ?? "User"}
-        width={44}
-        height={44}
-      />
+      {profile ? (
+        <SenderAvatar sender={profile} size={44} />
+      ) : (
+        <SenderAvatar
+          sender={{ displayName: "Unknown user", avatarUrl: undefined }}
+          size={44}
+        />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-ink">
+        <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
           {profile?.displayName ?? "Unknown user"}
+          {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
         </p>
         <p className="truncate text-sm text-ink-muted">
           @{profile?.username ?? "unknown"}
@@ -326,15 +333,18 @@ function SentRequestCard({ request }: { request: ConnectionRequest }) {
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      <ShowcaseAvatar
-        src={profile?.avatarUrl}
-        alt={profile?.displayName ?? "User"}
-        width={44}
-        height={44}
-      />
+      {profile ? (
+        <SenderAvatar sender={profile} size={44} />
+      ) : (
+        <SenderAvatar
+          sender={{ displayName: "Unknown user", avatarUrl: undefined }}
+          size={44}
+        />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-ink">
+        <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
           {profile?.displayName ?? "Unknown user"}
+          {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
         </p>
         <p className="truncate text-sm text-ink-muted">
           @{profile?.username ?? "unknown"}
@@ -442,15 +452,13 @@ function UserResultCard({
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      <ShowcaseAvatar
-        src={user.profile.avatarUrl}
-        alt={user.profile.displayName}
-        width={44}
-        height={44}
-      />
+      <SenderAvatar sender={user.profile} size={44} />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-ink">
+        <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
           {user.profile.displayName}
+          {user.profile.toli ? (
+            <ToliBadge name={user.profile.toli.name} />
+          ) : null}
         </p>
         <p className="truncate text-sm text-ink-muted">
           @{user.profile.username}

@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LogIn } from "lucide-react";
-import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import { SenderAvatar } from "@/components/common/sender-avatar";
+import { ToliBadge } from "@/components/toli/toli-badge";
+import { LockedPanel } from "@/components/common/locked-panel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +27,11 @@ import {
   useChannels,
   useLazyChannelMessagesQuery,
 } from "@/features/channels/api";
+import {
+  useMyToliChannel,
+  useMyToliChannelMessages,
+  useLazyMyToliChannelMessagesQuery,
+} from "@/features/toli/api";
 import { useChannelSocket } from "@/features/channels/use-channel-socket";
 import { ChannelList } from "@/features/channels/channel-list";
 import { channelColor } from "@/lib/channel-colors";
@@ -61,12 +68,36 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const channelQuery = useChannel(initialSlug);
 
   const channels = channelsQuery.data ?? [];
-  const activeChannel =
+  const publicActiveChannel =
     initialSlug
       ? channelQuery.data ?? channels.find((channel) => channel.slug === initialSlug)
       : channels.find((channel) => channel.isDefault) ?? channels[0];
 
-  const messagesQuery = useChannelMessages(activeChannel?.slug);
+  // Toli rooms are private membership rooms resolved through their own
+  // endpoints; they never appear in the public channel queries above.
+  const isLoggedIn = Boolean(authQuery.data);
+  const myToli = authQuery.data?.profile?.toli;
+  const isToliRoute = initialSlug?.startsWith("toli-") ?? false;
+  const myToliChannelQuery = useMyToliChannel(isLoggedIn && Boolean(myToli));
+  const myToliMessagesQuery = useMyToliChannelMessages(
+    null,
+    isToliRoute &&
+      myToliChannelQuery.isSuccess &&
+      Boolean(myToliChannelQuery.data),
+  );
+
+  const activeChannel = isToliRoute
+    ? (myToliChannelQuery.data ?? undefined)
+    : publicActiveChannel;
+  const toliSlugMismatch =
+    isToliRoute &&
+    Boolean(myToliChannelQuery.data) &&
+    myToliChannelQuery.data?.slug !== initialSlug;
+
+  const publicMessagesQuery = useChannelMessages(
+    isToliRoute ? undefined : publicActiveChannel?.slug,
+  );
+  const messagesQuery = isToliRoute ? myToliMessagesQuery : publicMessagesQuery;
   const initialMessages = messagesQuery.data?.messages ?? [];
   const initialPageInfo = messagesQuery.data?.pageInfo ?? { hasMore: false, nextCursor: null };
 
@@ -96,22 +127,31 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const nextCursor = messageState.cursor;
 
   const [loadOlder, loadOlderResult] = useLazyChannelMessagesQuery();
+  const [loadToliOlder, loadToliOlderResult] =
+    useLazyMyToliChannelMessagesQuery();
+  const loadingOlder =
+    loadOlderResult.isFetching || loadToliOlderResult.isFetching;
 
-  const isLoggedIn = Boolean(authQuery.data);
   const isValidMessage = message.trim().length > 0 && message.trim().length <= 500;
-  const hasApiError =
-    channelsQuery.isError ||
-    channelQuery.isError ||
-    messagesQuery.isError;
+  const hasApiError = isToliRoute
+    ? myToliChannelQuery.isError || myToliMessagesQuery.isError
+    : channelsQuery.isError ||
+      channelQuery.isError ||
+      publicMessagesQuery.isError;
   const isChannelLoading =
     channelsQuery.isLoading ||
-    (Boolean(initialSlug) && channelQuery.isLoading);
+    (Boolean(initialSlug) && !isToliRoute && channelQuery.isLoading) ||
+    (isToliRoute && myToliChannelQuery.isLoading);
   const hasLoadedChannels = channelsQuery.isSuccess && !isChannelLoading;
-  const channelNotFound =
-    Boolean(initialSlug) &&
-    !isChannelLoading &&
-    !channelQuery.isError &&
-    !activeChannel;
+  const channelNotFound = isToliRoute
+    ? (!myToliChannelQuery.isLoading &&
+        !myToliChannelQuery.isError &&
+        !myToliChannelQuery.data) ||
+      toliSlugMismatch
+    : Boolean(initialSlug) &&
+      !isChannelLoading &&
+      !channelQuery.isError &&
+      !publicActiveChannel;
 
   function scrollToBottom(behavior: ScrollBehavior = "auto") {
     const container = scrollContainerRef.current;
@@ -164,7 +204,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   }, [messageState.live]);
 
   const { status, online, error: socketError, banned, muted, sendMessage } =
-    useChannelSocket(activeChannel?.id, {
+    useChannelSocket(toliSlugMismatch ? undefined : activeChannel?.id, {
       onMessage: useCallback((incoming: ChannelMessage) => {
         setMessageState((current) =>
           current.live.some((item) => item.id === incoming.id)
@@ -217,10 +257,12 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
       return;
     }
 
-    const result = await loadOlder({
-      slug: activeChannel.slug,
-      cursor: nextCursor,
-    }).unwrap();
+    const result = isToliRoute
+      ? await loadToliOlder({ cursor: nextCursor }).unwrap()
+      : await loadOlder({
+          slug: activeChannel.slug,
+          cursor: nextCursor,
+        }).unwrap();
 
     if (result.messages.length > 0) {
       setMessageState((current) => {
@@ -243,6 +285,17 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
         hasPaged: true,
       }));
     }
+  }
+
+  if (isToliRoute && !authQuery.isLoading && !isLoggedIn) {
+    return (
+      <AppShell>
+        <LockedPanel
+          title="Members only"
+          message="Login and join a Toli to enter its private room."
+        />
+      </AppShell>
+    );
   }
 
   return (
@@ -283,6 +336,9 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                 {onlineCount.toLocaleString()} online
               </p>
             </div>
+            {activeChannel?.toli ? (
+              <ToliBadge name={activeChannel.toli.name} className="hidden sm:inline-flex" />
+            ) : null}
             <Badge variant="success" className="hidden gap-1 sm:inline-flex">
               <Wifi className="h-3.5 w-3.5" aria-hidden />
               Live
@@ -311,9 +367,9 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                     variant="ghost"
                     size="sm"
                     onClick={handleLoadOlder}
-                    disabled={loadOlderResult.isFetching}
+                    disabled={loadingOlder}
                   >
-                    {loadOlderResult.isFetching ? "Loading..." : "Load older messages"}
+                    {loadingOlder ? "Loading..." : "Load older messages"}
                   </Button>
                 </div>
               ) : null}
@@ -341,8 +397,12 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
 
               {channelNotFound ? (
                 <EmptyState
-                  title="Channel unavailable"
-                  message="This channel could not be found or is no longer active."
+                  title={toliSlugMismatch ? "Wrong Toli room" : "Channel unavailable"}
+                  message={
+                    toliSlugMismatch
+                      ? "This room belongs to another Toli. Open your own Toli room instead."
+                      : "This channel could not be found or is no longer active."
+                  }
                 />
               ) : null}
 
@@ -379,12 +439,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                         className="cursor-pointer rounded-full p-0 shadow-none outline-none focus-visible:ring-0"
                         aria-label={`View @${item.sender.username}'s profile`}
                       >
-                        <ShowcaseAvatar
-                          src={item.sender.avatarUrl}
-                          alt={item.sender.displayName}
-                          width={40}
-                          height={40}
-                        />
+                        <SenderAvatar sender={item.sender} size={40} />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -394,12 +449,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                       className="w-56 p-3"
                     >
                       <div className="flex items-center gap-3">
-                        <ShowcaseAvatar
-                          src={item.sender.avatarUrl}
-                          alt={item.sender.displayName}
-                          width={48}
-                          height={48}
-                        />
+                        <SenderAvatar sender={item.sender} size={48} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-ink">
                             {item.sender.displayName}
@@ -407,6 +457,12 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                           <p className="truncate text-xs text-ink-subtle">
                             @{item.sender.username}
                           </p>
+                          {item.sender.toli ? (
+                            <ToliBadge
+                              name={item.sender.toli.name}
+                              className="mt-1"
+                            />
+                          ) : null}
                         </div>
                       </div>
                       {item.sender.role && item.sender.role !== "user" ? (
@@ -438,6 +494,9 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                       <span className="text-sm font-semibold text-ink">
                         {item.sender.displayName}
                       </span>
+                      {item.sender.toli ? (
+                        <ToliBadge name={item.sender.toli.name} />
+                      ) : null}
                       {item.sender.role && item.sender.role !== "user" ? (
                         <span className="inline-flex items-center gap-1 rounded bg-brand-soft px-1.5 py-0.5 text-[11px] font-semibold text-brand-ink">
                           <ShieldCheck className="h-3 w-3" aria-hidden />
@@ -554,6 +613,25 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                 </Button>
               </div>
             ) : null}
+            {isLoggedIn && myToli && myToliChannelQuery.data ? (
+              <div className="mt-4 rounded-xl border border-line bg-surface-muted p-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-ink-subtle">
+                  My Toli
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`/channels/${myToliChannelQuery.data?.slug}`)
+                  }
+                  className="mt-2 flex w-full items-center justify-between gap-2 text-left"
+                >
+                  <span className="truncate text-sm font-semibold text-ink">
+                    {myToliChannelQuery.data.name}
+                  </span>
+                  <ToliBadge name={myToli.name} />
+                </button>
+              </div>
+            ) : null}
           </div>
         </aside>
       </div>
@@ -567,6 +645,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
             activeSlug={activeChannel?.slug ?? ""}
             channels={channels}
             isLoading={channelsQuery.isLoading}
+            toliChannel={isLoggedIn ? (myToliChannelQuery.data ?? null) : null}
             onSelect={() => setIsChannelListOpen(false)}
             fullHeight
           />
@@ -686,6 +765,8 @@ function errorMessage(code: string): string {
       return "Message must be 500 characters or fewer.";
     case "RATE_LIMITED":
       return "You are sending messages too quickly.";
+    case "TOLI_FORBIDDEN":
+      return "This room belongs to another Toli.";
     case "NO_ACK":
       return "The server did not confirm your message.";
     default:

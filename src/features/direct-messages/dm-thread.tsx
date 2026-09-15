@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SendHorizonal, AlertCircle, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import { SenderAvatar } from "@/components/common/sender-avatar";
+import { ToliBadge } from "@/components/toli/toli-badge";
 import { useAuthSession } from "@/features/auth/api";
-import {
-  useDmMessages,
-  useLazyDmMessagesQuery,
-} from "@/features/direct-messages/api";
+import { useDmMessages, useLazyDmMessagesQuery } from "@/features/direct-messages/api";
+import { useMarkNotificationsReadMutation } from "@/features/notifications/api";
 import { useDmSocket } from "@/features/direct-messages/use-dm-socket";
 import { type DmErrorPayload } from "@/lib/realtime";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +23,15 @@ export function DmThread({ conversationId }: { conversationId: string }) {
 
   const messagesQuery = useDmMessages(conversationId, userId);
   const [loadOlder] = useLazyDmMessagesQuery();
+  const [markConversationRead] = useMarkNotificationsReadMutation();
+
+  // Actively viewing the thread clears its DM notifications (read state is
+  // maintained; no toast noise while reading).
+  useEffect(() => {
+    if (isLoggedIn && conversationId) {
+      void markConversationRead({ conversationId });
+    }
+  }, [conversationId, isLoggedIn, markConversationRead]);
   const initialMessages = messagesQuery.data?.messages ?? [];
   const initialPageInfo = messagesQuery.data?.pageInfo ?? {
     hasMore: false,
@@ -68,9 +77,10 @@ export function DmThread({ conversationId }: { conversationId: string }) {
   );
 
   const conversation = messagesQuery.data?.conversation;
+  const otherMember = conversation?.members.find((m) => !m.isSelf);
   const otherUserName =
-    conversation?.members.find((m) => !m.isSelf)?.profile.displayName ||
-    conversation?.members.find((m) => !m.isSelf)?.profile.username ||
+    otherMember?.profile.displayName ||
+    otherMember?.profile.username ||
     "Unknown user";
 
   const sendErrorCode = socketError?.code ?? sendState.code;
@@ -99,6 +109,14 @@ export function DmThread({ conversationId }: { conversationId: string }) {
     ...messageState.live,
   ];
   const nextCursor = messageState.cursor;
+
+  const liveCount = messageState.live.length;
+
+  useEffect(() => {
+    if (isLoggedIn && conversationId && liveCount > 0) {
+      void markConversationRead({ conversationId });
+    }
+  }, [liveCount, conversationId, isLoggedIn, markConversationRead]);
 
   const isValidMessage =
     message.trim().length > 0 && message.trim().length <= DM_MAX_LENGTH;
@@ -288,18 +306,22 @@ export function DmThread({ conversationId }: { conversationId: string }) {
         >
           ←
         </button>
-        <ShowcaseAvatar
-          src={
-            conversation?.members.find((m) => !m.isSelf)?.profile.avatarUrl ??
-            undefined
-          }
-          alt={otherUserName}
-          width={40}
-          height={40}
-        />
+        {otherMember?.profile ? (
+          <SenderAvatar sender={otherMember.profile} size={40} />
+        ) : (
+          <ShowcaseAvatar
+            src={undefined}
+            alt={otherUserName}
+            width={40}
+            height={40}
+          />
+        )}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-bold text-ink">
+          <h2 className="flex flex-wrap items-center gap-2 truncate text-base font-bold text-ink">
             {otherUserName}
+            {otherMember?.profile.toli ? (
+              <ToliBadge name={otherMember.profile.toli.name} />
+            ) : null}
           </h2>
           <p className="text-xs text-ink-subtle">
             {status === "connected" ? "Online" : status}
@@ -471,12 +493,7 @@ function DmMessageRow({
       ].join(" ")}
     >
       {!isOwn && senderProfile ? (
-        <ShowcaseAvatar
-          src={senderProfile.avatarUrl ?? undefined}
-          alt={senderProfile.displayName || senderProfile.username || "User"}
-          width={32}
-          height={32}
-        />
+        <SenderAvatar sender={senderProfile} size={32} />
       ) : !isOwn ? (
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-muted">
           ?

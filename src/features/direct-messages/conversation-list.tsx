@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import { SenderAvatar } from "@/components/common/sender-avatar";
+import { ToliBadge } from "@/components/toli/toli-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DmConversation } from "@/types/domain";
 
@@ -65,15 +66,13 @@ export function ConversationList({
                 active && "bg-surface-hover",
               )}
             >
-              <ShowcaseAvatar
-                src={profile.avatarUrl}
-                alt={displayName}
-                width={40}
-                height={40}
-              />
+              <SenderAvatar sender={profile} size={40} />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-ink">
+                <p className="flex items-center gap-2 truncate font-semibold text-ink">
                   {displayName}
+                  {profile.toli ? (
+                    <ToliBadge name={profile.toli.name} />
+                  ) : null}
                 </p>
                 {latest ? (
                   <p className="truncate text-xs text-ink-muted">

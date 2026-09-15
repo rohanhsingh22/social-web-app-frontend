@@ -27,6 +27,11 @@ const channelColors: Record<Channel["type"], ChannelColor> = {
     text: "text-identity-amber-ink",
     ring: "ring-identity-amber",
   },
+  toli: {
+    bg: "bg-identity-rose-soft",
+    text: "text-identity-rose-ink",
+    ring: "ring-identity-rose",
+  },
 };
 
 export function channelColor(type: Channel["type"]): ChannelColor {

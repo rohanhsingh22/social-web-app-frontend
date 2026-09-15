@@ -12,10 +12,21 @@ import type {
   ConnectionRequest,
   ConnectionProfile,
   ConnectionUser,
+  Notification,
+  NotificationsPage,
   PageInfo,
   Profile,
+  ProfilePicture,
+  ProfilePictureState,
   SearchUserConnection,
   SearchUsersResponse,
+  Thought,
+  ThoughtAuthor,
+  ThoughtComment,
+  ThoughtCommentPage,
+  ThoughtPage,
+  Toli,
+  ToliRef,
   UserSummary,
 } from "@/types/domain";
 import { DEFAULT_CHARACTER_CONFIG } from "@/types/domain";
@@ -103,6 +114,10 @@ export function normalizeUser(value: unknown): UserSummary {
       "Unknown user",
     ),
     avatarUrl: asOptionalString(record.avatarUrl ?? record.avatar_url ?? profile.avatarUrl ?? profile.avatar_url),
+    profilePicture: normalizeProfilePicture(
+      record.profilePicture ?? record.profile_picture ?? profile,
+    ),
+    toli: normalizeToliRef(record.toli ?? profile.toli),
     role: asString(record.role, "user") as UserSummary["role"],
     status: asString(record.status, "active") as UserSummary["status"],
   };
@@ -134,6 +149,8 @@ export function normalizeProfile(value: unknown): Profile {
     username: asString(profile.username ?? user.username, user.username),
     displayName: asString(profile.displayName ?? profile.display_name ?? user.displayName, user.displayName),
     avatarUrl: asOptionalString(profile.avatarUrl ?? profile.avatar_url, user.avatarUrl),
+    profilePicture: normalizeProfilePicture(profile),
+    toli: normalizeToliRef(profile.toli),
     bio: asString(profile.bio, ""),
     dob: asString(profile.dob ?? profile.dateOfBirth ?? profile.date_of_birth, ""),
     ageGroup: asString(profile.ageGroup ?? profile.age_group, ""),
@@ -143,8 +160,47 @@ export function normalizeProfile(value: unknown): Profile {
     characterConfig: normalizeCharacterConfig(profile.character_config ?? profile.characterConfig),
     primaryLanguage: asString(profile.primaryLanguage ?? profile.primary_language, ""),
     languages: asStringArray(profile.languages),
+    interests: asStringArray(profile.interests),
     isComplete: asBoolean(profile.isComplete ?? profile.is_complete, false),
     publicUserId: asOptionalString(profile.publicUserId ?? profile.public_user_id),
+  };
+}
+
+export function normalizeToliRef(value: unknown): ToliRef | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = asString(value.id);
+  const name = asString(value.name);
+
+  return id && name ? { id, name } : null;
+}
+
+export function normalizeProfilePicture(value: unknown): ProfilePicture {
+  const root = pickRecord(value, ["data"]);
+  const record = isRecord(root) ? root : {};
+  const rawSource = record.profilePicture ?? record.profile_picture;
+  const source = isRecord(rawSource) ? rawSource : record;
+  const type = source.type === "toli" ? "toli" : "provider";
+
+  return {
+    type,
+    avatarUrl: asOptionalString(source.avatarUrl ?? source.avatar_url) ?? null,
+    toliAvatarKey:
+      asOptionalString(source.toliAvatarKey ?? source.toli_avatar_key) ?? null,
+  };
+}
+
+export function normalizeProfilePictureState(
+  value: unknown,
+): ProfilePictureState {
+  const root = pickRecord(value, ["data"]);
+  const record = isRecord(root) ? root : {};
+
+  return {
+    ...normalizeProfilePicture(record),
+    toli: normalizeToliRef(record.toli),
   };
 }
 
@@ -159,6 +215,19 @@ export function normalizeAuthSession(value: unknown): AuthSession {
   const profile = isRecord(profileSource) ? normalizeProfile(profileSource) : undefined;
 
   return { user, profile };
+}
+
+export function normalizeDisplayNameAvailability(value: unknown): {
+  available: boolean;
+  displayName: string;
+} {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+
+  return {
+    available: asBoolean(record.available, false),
+    displayName: asString(record.displayName ?? record.display_name),
+  };
 }
 
 export function normalizeChannels(value: unknown): Channel[] {
@@ -176,6 +245,175 @@ export function normalizeChannel(value: unknown): Channel {
     onlineCount: asNumber(record.onlineCount ?? record.online_count, 0),
     isDefault: asBoolean(record.isDefault ?? record.is_default, false),
     isActive: asBoolean(record.isActive ?? record.is_active, true),
+    toli: normalizeToliRef(record.toli),
+  };
+}
+
+export function normalizeToli(value: unknown): Toli {
+  const payload = pickRecord(value, ["data"]);
+  const source = isRecord(payload) ? payload : {};
+  const record = isRecord(source.toli) ? source.toli : source;
+
+  return {
+    id: asString(record.id, "unknown"),
+    name: asString(record.name, "Unknown"),
+    description: asString(record.description, ""),
+    motto: asString(record.motto, ""),
+    memberCount: asNumber(record.memberCount ?? record.member_count, 0),
+    avatars: asStringArray(record.avatars),
+  };
+}
+
+export function normalizeTolis(value: unknown): Toli[] {
+  return pickArray(value, ["tolis", "data", "items"]).map(normalizeToli);
+}
+
+export function normalizeThoughtAuthor(value: unknown): ThoughtAuthor {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    userId: asString(record.userId ?? record.user_id ?? record.id, "unknown"),
+    publicUserId: asOptionalString(
+      record.publicUserId ?? record.public_user_id,
+    ),
+    username: asString(record.username, "unknown"),
+    displayName: asString(
+      record.displayName ?? record.display_name,
+      "Unknown",
+    ),
+    profilePicture: normalizeProfilePicture(
+      record.profilePicture ?? record.profile_picture ?? record,
+    ),
+    toli: normalizeToliRef(record.toli),
+  };
+}
+
+function normalizeThoughtCounts(value: unknown): Thought["counts"] {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    likes: asNumber(record.likes, 0),
+    comments: asNumber(record.comments, 0),
+    shares: asNumber(record.shares, 0),
+  };
+}
+
+function normalizeThoughtViewer(value: unknown): Thought["viewer"] {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    liked: asBoolean(record.liked, false),
+    shared: asBoolean(record.shared, false),
+    hidden: asBoolean(record.hidden, false),
+  };
+}
+
+export function normalizeThought(value: unknown): Thought {
+  const payload = pickRecord(value, ["data"]);
+  const source = isRecord(payload) ? payload : {};
+  const record = isRecord(source.thought) ? source.thought : source;
+
+  return {
+    id: asString(record.id, "unknown"),
+    body: asString(record.body, ""),
+    status: (["active", "deleted", "hidden", "flagged"] as const).includes(
+      record.status as Thought["status"],
+    )
+      ? (record.status as Thought["status"])
+      : "active",
+    createdAt: asString(record.createdAt ?? record.created_at, ""),
+    author: normalizeThoughtAuthor(record.author),
+    counts: normalizeThoughtCounts(record.counts),
+    viewer: normalizeThoughtViewer(record.viewer),
+  };
+}
+
+export function normalizeThoughtPage(value: unknown): ThoughtPage {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+
+  return {
+    thoughts: pickArray(record, ["thoughts", "data", "items"]).map(
+      normalizeThought,
+    ),
+    pageInfo: normalizePageInfo(record.pageInfo ?? record.page_info ?? record),
+  };
+}
+
+export function normalizeThoughtComment(value: unknown): ThoughtComment {
+  const payload = pickRecord(value, ["data"]);
+  const source = isRecord(payload) ? payload : {};
+  const record = isRecord(source.comment) ? source.comment : source;
+
+  return {
+    id: asString(record.id, "unknown"),
+    body: asString(record.body, ""),
+    status: (["active", "deleted", "hidden", "flagged"] as const).includes(
+      record.status as ThoughtComment["status"],
+    )
+      ? (record.status as ThoughtComment["status"])
+      : "active",
+    createdAt: asString(record.createdAt ?? record.created_at, ""),
+    author: normalizeThoughtAuthor(record.author),
+  };
+}
+
+export function normalizeThoughtCommentPage(
+  value: unknown,
+): ThoughtCommentPage {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+
+  return {
+    thoughtId: asString(record.thoughtId ?? record.thought_id, "unknown"),
+    comments: pickArray(record, ["comments", "data", "items"]).map(
+      normalizeThoughtComment,
+    ),
+    pageInfo: normalizePageInfo(record.pageInfo ?? record.page_info ?? record),
+  };
+}
+
+const NOTIFICATION_TYPES = [
+  "connection_request",
+  "connection_accepted",
+  "new_dm",
+  "legal_notice",
+] as const;
+
+export function normalizeNotification(value: unknown): Notification {
+  const payload = pickRecord(value, ["data"]);
+  const source = isRecord(payload) ? payload : {};
+  const record = isRecord(source.notification) ? source.notification : source;
+  const type = asString(record.type, "");
+
+  return {
+    id: asString(record.id, "unknown"),
+    type: (
+      NOTIFICATION_TYPES as readonly string[]
+    ).includes(type)
+      ? (type as Notification["type"])
+      : "legal_notice",
+    title: asString(record.title, ""),
+    body: asOptionalString(record.body) ?? null,
+    metadata: isRecord(record.metadata) ? record.metadata : null,
+    readAt: asOptionalString(record.readAt ?? record.read_at) ?? null,
+    createdAt: asString(record.createdAt ?? record.created_at, ""),
+    expiresAt: asOptionalString(record.expiresAt ?? record.expires_at) ?? null,
+  };
+}
+
+export function normalizeNotificationsPage(
+  value: unknown,
+): NotificationsPage {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+
+  return {
+    notifications: pickArray(record, ["notifications", "data", "items"]).map(
+      normalizeNotification,
+    ),
+    pageInfo: normalizePageInfo(record.pageInfo ?? record.page_info ?? record),
+    unreadCount: asNumber(record.unreadCount ?? record.unread_count, 0),
   };
 }
 
@@ -245,6 +483,10 @@ export function normalizeSearchUser(value: unknown) {
       username: asString(profile.username, "unknown"),
       displayName: asString(profile.displayName ?? profile.display_name, "Unknown user"),
       avatarUrl: asOptionalString(profile.avatarUrl ?? profile.avatar_url),
+      profilePicture: normalizeProfilePicture(
+        profile.profilePicture ?? profile.profile_picture ?? profile,
+      ),
+      toli: normalizeToliRef(profile.toli),
       bio: asString(profile.bio, ""),
       ageGroup: asString(profile.ageGroup ?? profile.age_group, ""),
       region: asString(profile.region, ""),
@@ -262,6 +504,10 @@ function normalizeConnectionProfile(value: unknown): ConnectionProfile {
     username: asString(record.username, "unknown"),
     displayName: asString(record.displayName ?? record.display_name, "Unknown user"),
     avatarUrl: asOptionalString(record.avatarUrl ?? record.avatar_url),
+    profilePicture: normalizeProfilePicture(
+      record.profilePicture ?? record.profile_picture ?? record,
+    ),
+    toli: normalizeToliRef(record.toli),
     bio: asString(record.bio, ""),
     ageGroup: asString(record.ageGroup ?? record.age_group, ""),
     region: asString(record.region, ""),
@@ -360,6 +606,10 @@ function normalizeDmProfile(value: unknown): DmConversationMember["profile"] {
     username: asString(record.username, "unknown"),
     displayName: asString(record.displayName ?? record.display_name, "Unknown user"),
     avatarUrl: asOptionalString(record.avatarUrl ?? record.avatar_url) ?? null,
+    profilePicture: normalizeProfilePicture(
+      record.profilePicture ?? record.profile_picture ?? record,
+    ),
+    toli: normalizeToliRef(record.toli),
     bio: asString(record.bio, ""),
     ageGroup: asString(record.ageGroup ?? record.age_group, ""),
     region: asString(record.region, ""),
@@ -400,6 +650,10 @@ function normalizeDirectMessageSender(
           avatarUrl: asOptionalString(
             profile.avatarUrl ?? profile.avatar_url,
           ) ?? null,
+          profilePicture: normalizeProfilePicture(
+            profile.profilePicture ?? profile.profile_picture ?? profile,
+          ),
+          toli: normalizeToliRef(profile.toli),
         }
       : null,
   };

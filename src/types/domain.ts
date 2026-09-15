@@ -6,16 +6,37 @@ export type UserSummary = {
   publicUserId?: string;
   role?: "user" | "moderator" | "admin";
   status?: "active" | "muted" | "banned" | "deleted";
+  profilePicture?: ProfilePicture;
+  toli?: ToliRef | null;
 };
 
 export type Channel = {
   id: string;
   name: string;
   slug: string;
-  type: "language" | "age" | "region" | "general";
+  type: "language" | "age" | "region" | "general" | "toli";
   onlineCount: number;
   isDefault?: boolean;
   isActive?: boolean;
+  toli: ToliRef | null;
+};
+
+export type Toli = {
+  id: string;
+  name: string;
+  description: string;
+  motto: string;
+  memberCount: number;
+  avatars: string[];
+};
+
+export type ThoughtAuthor = {
+  userId: string;
+  publicUserId?: string;
+  username: string;
+  displayName: string;
+  profilePicture: ProfilePicture;
+  toli: ToliRef | null;
 };
 
 export type ChannelMessage = {
@@ -45,6 +66,8 @@ export type DmConversationMember = {
     username: string;
     displayName: string;
     avatarUrl: string | null;
+    profilePicture: ProfilePicture;
+    toli: ToliRef | null;
     bio: string | null;
     ageGroup: string | null;
     region: string | null;
@@ -78,6 +101,8 @@ export type DirectMessage = {
       username: string;
       displayName: string;
       avatarUrl: string | null;
+      profilePicture: ProfilePicture;
+      toli: ToliRef | null;
     } | null;
   };
 };
@@ -109,6 +134,8 @@ export type ConnectionProfile = {
   username: string;
   displayName: string;
   avatarUrl?: string;
+  profilePicture: ProfilePicture;
+  toli: ToliRef | null;
   bio?: string;
   ageGroup?: string;
   region?: string;
@@ -155,6 +182,21 @@ export const DEFAULT_CHARACTER_CONFIG: CharacterConfig = {
   outfitColor: "#3b82f6",
 };
 
+export type ProfilePicture = {
+  type: "provider" | "toli";
+  avatarUrl?: string | null;
+  toliAvatarKey?: string | null;
+};
+
+export type ToliRef = {
+  id: string;
+  name: string;
+};
+
+export type ProfilePictureState = ProfilePicture & {
+  toli: ToliRef | null;
+};
+
 export type Profile = UserSummary & {
   bio?: string;
   dob?: string;
@@ -163,8 +205,11 @@ export type Profile = UserSummary & {
   city?: string;
   gender?: string;
   characterConfig?: CharacterConfig;
+  profilePicture: ProfilePicture;
+  toli: ToliRef | null;
   primaryLanguage?: string;
   languages: string[];
+  interests: string[];
   isComplete: boolean;
   publicUserId?: string;
 };
@@ -173,6 +218,8 @@ export type SearchUserProfile = {
   username: string;
   displayName: string;
   avatarUrl?: string;
+  profilePicture: ProfilePicture;
+  toli: ToliRef | null;
   bio?: string;
   ageGroup?: string;
   region?: string;
@@ -185,7 +232,6 @@ export type SearchUserConnection = {
   status: "pending" | "accepted" | "blocked" | "cancelled";
   direction: "sent" | "received" | null;
 };
-
 export type SearchUserResult = {
   id: string;
   profile: SearchUserProfile;
@@ -195,6 +241,70 @@ export type SearchUserResult = {
 export type SearchUsersResponse = {
   query: string;
   users: SearchUserResult[];
+};
+
+export type ThoughtCounts = {
+  likes: number;
+  comments: number;
+  shares: number;
+};
+
+export type ThoughtViewerState = {
+  liked: boolean;
+  shared: boolean;
+  hidden: boolean;
+};
+
+export type Thought = {
+  id: string;
+  body: string;
+  status: "active" | "deleted" | "hidden" | "flagged";
+  createdAt: string;
+  author: ThoughtAuthor;
+  counts: ThoughtCounts;
+  viewer: ThoughtViewerState;
+};
+
+export type ThoughtPage = {
+  thoughts: Thought[];
+  pageInfo: PageInfo;
+};
+
+export type ThoughtComment = {
+  id: string;
+  body: string;
+  status: "active" | "deleted" | "hidden" | "flagged";
+  createdAt: string;
+  author: ThoughtAuthor;
+};
+
+export type ThoughtCommentPage = {
+  thoughtId: string;
+  comments: ThoughtComment[];
+  pageInfo: PageInfo;
+};
+
+export type NotificationType =
+  | "connection_request"
+  | "connection_accepted"
+  | "new_dm"
+  | "legal_notice";
+
+export type Notification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body?: string | null;
+  metadata: Record<string, unknown> | null;
+  readAt: string | null;
+  createdAt: string;
+  expiresAt?: string | null;
+};
+
+export type NotificationsPage = {
+  notifications: Notification[];
+  pageInfo: PageInfo;
+  unreadCount: number;
 };
 
 export type AuthSession = {

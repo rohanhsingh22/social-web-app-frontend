@@ -79,6 +79,15 @@ export function useDmSocket(
 
       socket.io.on("reconnect_attempt", () => {
         setStatus("reconnecting");
+        // See use-channel-socket: refresh ahead of the next handshake.
+        void ensureFreshAccessToken().then((freshToken) => {
+          if (freshToken && socket && socketRef.current === socket) {
+            socket.auth = { token: freshToken };
+            socket.io.opts.extraHeaders = {
+              Authorization: `Bearer ${freshToken}`,
+            };
+          }
+        });
       });
 
       socket.io.on("reconnect", () => {

@@ -34,7 +34,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { Avatar } from "@/components/character/avatar";
 import { Canvas } from "@react-three/fiber";
-import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
+import { SenderAvatar } from "@/components/common/sender-avatar";
+import { ToliBadge } from "@/components/toli/toli-badge";
 import { cn } from "@/lib/utils";
 
 import {
@@ -314,11 +315,9 @@ export function ProfilePage() {
                       {/* Avatar */}
                       <div className="relative shrink-0">
                         <div className="rounded-full bg-surface p-1">
-                          <ShowcaseAvatar
-                            src={currentProfile.avatarUrl}
-                            alt={currentProfile.displayName}
-                            width={112}
-                            height={112}
+                          <SenderAvatar
+                            sender={currentProfile}
+                            size={112}
                           />
                         </div>
 
@@ -342,6 +341,13 @@ export function ProfilePage() {
                               <Shield className="h-3 w-3" />
                               {currentProfile.role}
                             </span>
+                          ) : null}
+
+                          {currentProfile.toli ? (
+                            <ToliBadge
+                              name={currentProfile.toli.name}
+                              className="shrink-0"
+                            />
                           ) : null}
                         </div>
 

@@ -84,6 +84,17 @@ export function useChannelSocket(
 
       socket.io.on("reconnect_attempt", () => {
         setStatus("reconnecting");
+        // Refresh the access token ahead of the next handshake so
+        // reconnects never ride on a stale token. The existing
+        // auth:error handler remains the backstop for expired tokens.
+        void ensureFreshAccessToken().then((freshToken) => {
+          if (freshToken && socket && socketRef.current === socket) {
+            socket.auth = { token: freshToken };
+            socket.io.opts.extraHeaders = {
+              Authorization: `Bearer ${freshToken}`,
+            };
+          }
+        });
       });
 
       socket.io.on("reconnect", () => {

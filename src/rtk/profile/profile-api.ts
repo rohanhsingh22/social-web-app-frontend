@@ -1,7 +1,12 @@
 import { skipToken } from "@reduxjs/toolkit/query";
 import { baseApi } from "@/rtk/base-api";
-import { normalizeProfile } from "@/lib/normalizers";
-import type { Profile } from "@/types/domain";
+import { normalizeDisplayNameAvailability, normalizeProfile, normalizeProfilePictureState } from "@/lib/normalizers";
+import type { Profile, ProfilePictureState } from "@/types/domain";
+
+export type DisplayNameAvailability = {
+  available: boolean;
+  displayName: string;
+};
 
 export type ProfileUpdateInput = {
   username?: string;
@@ -19,6 +24,12 @@ export type ProfileUpdateInput = {
   };
   primaryLanguage?: string;
   languages?: string[];
+  interests?: string[];
+};
+
+export type ProfilePictureInput = {
+  type: "provider" | "toli";
+  avatarKey?: string;
 };
 
 export const profileApi = baseApi.injectEndpoints({
@@ -44,6 +55,28 @@ export const profileApi = baseApi.injectEndpoints({
       transformResponse: (response: unknown) => normalizeProfile(response),
       invalidatesTags: ["AuthSession", "Profile"],
     }),
+    displayNameAvailability: builder.query<DisplayNameAvailability, string>({
+      query: (displayName) =>
+        `/profiles/check-display-name?displayName=${encodeURIComponent(displayName)}`,
+      transformResponse: (response: unknown) =>
+        normalizeDisplayNameAvailability(response),
+    }),
+    myProfilePicture: builder.query<ProfilePictureState, void>({
+      query: () => "/profiles/me/picture",
+      transformResponse: (response: unknown) =>
+        normalizeProfilePictureState(response),
+      providesTags: ["Profile"],
+    }),
+    updateProfilePicture: builder.mutation<ProfilePictureState, ProfilePictureInput>({
+      query: (input) => ({
+        url: "/profiles/me/picture",
+        method: "PUT",
+        body: input,
+      }),
+      transformResponse: (response: unknown) =>
+        normalizeProfilePictureState(response),
+      invalidatesTags: ["AuthSession", "Profile"],
+    }),
   }),
 });
 
@@ -51,6 +84,9 @@ export const {
   useMyProfileQuery,
   usePublicProfileQuery,
   useUpdateMyProfileMutation,
+  useLazyDisplayNameAvailabilityQuery,
+  useMyProfilePictureQuery,
+  useUpdateProfilePictureMutation,
 } = profileApi;
 
 export function useMyProfile(enabled: boolean) {

@@ -1,19 +1,21 @@
 import clsx from "clsx";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Lightbulb, MessageSquare, Settings, UsersRound } from "lucide-react";
+import { Bell, Home, Lightbulb, MessageSquare, Settings, UsersRound } from "lucide-react";
 import logoDark from "@/assets/app-logo/HiRotili Logo Dark.png";
 import logoLight from "@/assets/app-logo/HiRotoli Logo Light.png";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ChannelList } from "@/features/channels/channel-list";
 import { useChannels } from "@/features/channels/api";
+import { NotificationBellIcon } from "@/features/notifications/notification-bell";
 
 const navItems = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/messages", label: "Messages", icon: MessageSquare },
-  { href: "/thoughts", label: "Thoughts", icon: Lightbulb },
-  { href: "/connections", label: "Connections", icon: UsersRound },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/home", label: "Home", shortLabel: "Home", icon: Home },
+  { href: "/messages", label: "Messages", shortLabel: "Chats", icon: MessageSquare },
+  { href: "/thoughts", label: "Thoughts", shortLabel: "Thoughts", icon: Lightbulb },
+  { href: "/connections", label: "Connections", shortLabel: "Connect", icon: UsersRound },
+  { href: "/notifications", label: "Notifications", shortLabel: "Alerts", icon: Bell, bell: true },
+  { href: "/settings", label: "Settings", shortLabel: "Settings", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -72,7 +74,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     "bg-brand-soft font-semibold text-brand-ink hover:bg-brand-soft hover:text-brand-ink",
                 )}
               >
-                <Icon className="h-5 w-5" aria-hidden />
+                {"bell" in item && item.bell ? (
+                  <NotificationBellIcon />
+                ) : (
+                  <Icon className="h-5 w-5" aria-hidden />
+                )}
                 <span>{item.label}</span>
               </Link>
             );
@@ -99,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="min-h-dvh pb-16 lg:h-full lg:overflow-hidden lg:pb-0 lg:pl-64">{children}</main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-6 border-t border-line bg-surface/90 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-7 border-t border-line bg-surface/90 backdrop-blur lg:hidden"
         aria-label="Main navigation"
       >
         {navItems.map((item) => {
@@ -114,24 +120,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               to={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center gap-1 text-xs font-medium text-ink-subtle",
+                "flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-ink-subtle",
                 active && "text-brand-ink",
               )}
             >
               <span
                 className={clsx(
-                  "grid h-8 w-14 place-items-center rounded-full transition-colors",
+                  "grid h-8 w-12 place-items-center rounded-full transition-colors",
                   active && "bg-brand-soft",
                 )}
               >
-                <Icon className="h-5 w-5" aria-hidden />
+                {"bell" in item && item.bell ? (
+                  <NotificationBellIcon />
+                ) : (
+                  <Icon className="h-5 w-5" aria-hidden />
+                )}
               </span>
-              <span>{item.label}</span>
+              <span className="max-w-full truncate px-0.5">{item.shortLabel}</span>
             </Link>
           );
         })}
-        <div className="flex flex-col items-center justify-center gap-1 text-xs font-medium text-ink-subtle">
-          <span className="grid h-8 w-14 place-items-center rounded-full">
+        <div className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-ink-subtle">
+          <span className="grid h-8 w-12 place-items-center rounded-full">
             <ThemeToggle />
           </span>
           <span>Theme</span>

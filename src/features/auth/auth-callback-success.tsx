@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Check, Globe, MessageCircle, PartyPopper, Rocket, Shield, Sparkles, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useAuthSession, useRefreshSessionMutation } from "@/features/auth/api";
+import { useEffect, useRef, useState } from "react";
+import { useRefreshSessionMutation } from "@/features/auth/api";
+import type { AuthSession } from "@/types/domain";
 
 function FeaturePill({ icon: Icon, text }: { icon: typeof MessageCircle; text: string }) {
   return (
@@ -14,40 +15,54 @@ function FeaturePill({ icon: Icon, text }: { icon: typeof MessageCircle; text: s
 
 export function AuthCallbackSuccess() {
   const navigate = useNavigate();
-  const authQuery = useAuthSession();
-  const profile = authQuery.data?.profile;
-  const [refreshSession] = useRefreshSessionMutation();
+  const [refreshSession, { isLoading, isError }] =
+    useRefreshSessionMutation();
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [countdown, setCountdown] = useState(3);
+  const startedRef = useRef(false);
 
+  // Single session restoration: exactly one refresh for the OAuth callback.
+  // Previously this page mounted useAuthSession (which refreshes on its own)
+  // and then fired a second refreshSession mutation on top of it.
   useEffect(() => {
+    if (startedRef.current) {
+      return;
+    }
+    startedRef.current = true;
     let cancelled = false;
 
     async function initSession() {
-      await refreshSession();
+      try {
+        const result = await refreshSession().unwrap();
+        if (cancelled) {
+          return;
+        }
+        setSession(result);
 
-      if (cancelled) {
-        return;
+        if (result?.profile && !result.profile.isComplete) {
+          navigate("/onboarding", { replace: true });
+          return;
+        }
+
+        if (result) {
+          navigate("/", { replace: true });
+        }
+      } catch {
+        if (!cancelled) {
+          setSession(null);
+        }
       }
-
-      if (profile && !profile.isComplete) {
-        navigate("/onboarding", { replace: true });
-        return;
-      }
-
-      navigate("/", { replace: true });
     }
 
-    if (authQuery.data) {
-      initSession();
-    }
+    void initSession();
 
     return () => {
       cancelled = true;
     };
-  }, [authQuery.data, profile, navigate, refreshSession]);
+  }, [navigate, refreshSession]);
 
   useEffect(() => {
-    if (authQuery.isLoading || !authQuery.data) {
+    if (isLoading || !session) {
       return;
     }
 
@@ -62,9 +77,9 @@ export function AuthCallbackSuccess() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [authQuery.isLoading, authQuery.data]);
+  }, [isLoading, session]);
 
-  const needsOnboarding = profile && !profile.isComplete;
+  const needsOnboarding = session?.profile && !session.profile.isComplete;
 
   return (
     <main className="relative min-h-dvh overflow-hidden">
@@ -129,7 +144,7 @@ export function AuthCallbackSuccess() {
           </p>
 
           {/* Countdown */}
-          {authQuery.data && (
+          {session && (
             <div className="mt-8">
               <p className="text-sm font-medium text-white/60">Redirecting in</p>
               <div className="mt-3 flex items-center justify-center gap-3">
@@ -152,7 +167,7 @@ export function AuthCallbackSuccess() {
           )}
 
           {/* Loading state */}
-          {authQuery.isLoading && (
+          {isLoading && (
             <div className="mt-8 flex items-center justify-center gap-1.5">
               <div className="h-2.5 w-2.5 animate-bounce rounded-full bg-white/70" style={{ animationDelay: "0ms" }} />
               <div className="h-2.5 w-2.5 animate-bounce rounded-full bg-white/70" style={{ animationDelay: "150ms" }} />
@@ -161,7 +176,7 @@ export function AuthCallbackSuccess() {
           )}
 
           {/* Error state */}
-          {authQuery.isError && (
+          {isError && (
             <div className="mt-6 rounded-xl border border-red-400/30 bg-red-500/20 p-4">
               <p className="text-sm font-medium text-white">
                 Could not load your session. Please try again.

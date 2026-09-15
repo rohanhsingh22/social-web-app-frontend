@@ -8,9 +8,11 @@ import HomePage from "@/pages/home-page";
 import LoginPage from "@/pages/login-page";
 import MessagesPage from "@/pages/messages-page";
 import NotFoundPage from "@/pages/not-found-page";
+import NotificationsRoutePage from "@/pages/notifications-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import ProfilePage from "@/pages/profile-page";
 import SettingsPage from "@/pages/settings-page";
+import ThoughtThreadPage from "@/pages/thought-thread-page";
 import ThoughtsPage from "@/pages/thoughts-page";
 
 export function AppRoutes() {
@@ -19,8 +21,10 @@ export function AppRoutes() {
       <Route path="/" element={<ChatPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/thoughts" element={<ThoughtsPage />} />
+      <Route path="/thoughts/:id" element={<ThoughtThreadPage />} />
       <Route path="/messages" element={<MessagesPage />} />
       <Route path="/messages/:conversationId" element={<MessagesPage />} />
+      <Route path="/notifications" element={<NotificationsRoutePage />} />
       <Route path="/channels/:slug" element={<ChannelPage />} />
       <Route path="/auth/callback/success" element={<AuthCallbackSuccessPage />} />
       <Route path="/settings" element={<SettingsPage />} />

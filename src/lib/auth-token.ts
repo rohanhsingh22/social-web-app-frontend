@@ -2,7 +2,7 @@ import { config } from "@/lib/config";
 
 let accessToken: string | null = null;
 let tokenExpiresAt = 0;
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<RefreshOutcome> | null = null;
 
 const REFRESH_SKEW_MS = 30_000;
 const FALLBACK_TTL_MS = 14 * 60 * 1000;
@@ -75,37 +75,66 @@ export function extractAccessToken(value: unknown): string | null {
   return null;
 }
 
+export type RefreshOutcome =
+  | { status: "ok"; token: string; body: unknown }
+  | { status: "unauthorized"; token: null; body: null }
+  | { status: "error"; token: null; body: null };
+
+async function doRefresh(): Promise<RefreshOutcome> {
+  try {
+    const response = await fetch(`${config.apiBaseUrl}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      setAccessToken(null);
+      return {
+        status:
+          response.status === 401 || response.status === 403
+            ? "unauthorized"
+            : "error",
+        token: null,
+        body: null,
+      };
+    }
+
+    const body: unknown = await response.json();
+    const token = extractAccessToken(body);
+    setAccessToken(token);
+
+    if (!token) {
+      return { status: "error", token: null, body: null };
+    }
+
+    return { status: "ok", token, body };
+  } catch {
+    setAccessToken(null);
+    return { status: "error", token: null, body: null };
+  }
+}
+
+// Single shared in-flight refresh for the whole app. The backend rotates
+// (revokes) the refresh token on every success, so two concurrent
+// POST /auth/refresh calls guarantee one 401. Every trigger — session
+// bootstrap, explicit refresh, 401 retry, socket reconnect — must join this
+// promise instead of firing its own request.
+export function refreshSessionOnce(): Promise<RefreshOutcome> {
+  if (!refreshPromise) {
+    refreshPromise = doRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
 export async function ensureFreshAccessToken(): Promise<string | null> {
   if (!isExpired()) {
     return accessToken;
   }
 
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-          headers: { Accept: "application/json" },
-        });
-
-        if (!response.ok) {
-          setAccessToken(null);
-          return null;
-        }
-
-        const body: unknown = await response.json();
-        const token = extractAccessToken(body);
-        setAccessToken(token);
-        return token;
-      } catch {
-        setAccessToken(null);
-        return null;
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-  }
-
-  return refreshPromise;
+  const outcome = await refreshSessionOnce();
+  return outcome.token;
 }

@@ -1,5 +1,6 @@
 import { LogOut, Moon, Sun, Settings } from "lucide-react";
 import { Avatar as AvatarPrimitive, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ToliAvatar } from "@/components/toli/toli-avatar";
 import { avatarColor } from "@/lib/channel-colors";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -14,8 +15,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { UserSummary } from "@/types/domain";
 
+function toliAvatarKeyOf(user: UserSummary): string | null {
+  return user.profilePicture?.type === "toli"
+    ? (user.profilePicture.toliAvatarKey ?? null)
+    : null;
+}
+
 function SquareAvatar({ user }: { user: UserSummary }) {
   const color = avatarColor(user.displayName || user.username || user.id);
+  const toliKey = toliAvatarKeyOf(user);
+
+  if (toliKey) {
+    return (
+      <ToliAvatar
+        avatarKey={toliKey}
+        name={user.displayName}
+        size={48}
+        className="rounded-md text-sm"
+      />
+    );
+  }
 
   return (
     <AvatarPrimitive className="h-12 w-12 rounded-md">
@@ -107,6 +126,11 @@ export function UserMenu({ showName = false }: { showName?: boolean }) {
 
 function AvatarTrigger({ user }: { user: UserSummary }) {
   const color = avatarColor(user.displayName || user.username || user.id);
+  const toliKey = toliAvatarKeyOf(user);
+
+  if (toliKey) {
+    return <ToliAvatar avatarKey={toliKey} name={user.displayName} size={40} />;
+  }
 
   return (
     <AvatarPrimitive className="h-10 w-10 rounded-full">

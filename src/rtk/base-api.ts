@@ -59,6 +59,13 @@ export const baseApi = createApi({
     "Connections",
     "DmConversations",
     "DmMessages",
+    "Tolis",
+    "ToliChannel",
+    "ToliMessages",
+    "Thoughts",
+    "Thought",
+    "ThoughtComments",
+    "Notifications",
   ],
   endpoints: () => ({}),
 });
