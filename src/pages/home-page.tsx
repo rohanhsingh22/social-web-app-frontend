@@ -20,7 +20,10 @@ const SHOWCASE_CHARACTERS = [
 export default function HomePage() {
   const authQuery = useAuthSession();
   const profile = authQuery.data?.profile;
-  const toliChannelQuery = useMyToliChannel(Boolean(profile?.toli));
+  // Gate on the nested ref or the scalar id (session shapes vary).
+  const hasToli = Boolean(profile?.toli ?? profile?.toliId);
+  const toliName = profile?.toli?.name;
+  const toliChannelQuery = useMyToliChannel(hasToli);
 
   const configs = profile?.characterConfig
     ? [profile.characterConfig]
@@ -29,20 +32,24 @@ export default function HomePage() {
   return (
     <AppShell>
       <div className="relative flex h-full flex-col">
-        {profile?.toli ? (
+        {hasToli ? (
           <div className="absolute left-4 top-4 z-10 rounded-2xl border border-line bg-surface/90 p-3 backdrop-blur">
             <p className="text-[11px] font-bold uppercase tracking-wide text-ink-subtle">
               My Toli
             </p>
             <div className="mt-1">
-              <ToliBadge name={profile.toli.name} />
+              <ToliBadge
+                name={
+                  toliName ?? toliChannelQuery.data?.toli?.name ?? "Toli"
+                }
+              />
             </div>
             {toliChannelQuery.data ? (
               <Link
                 to={`/channels/${toliChannelQuery.data.slug}`}
                 className="mt-2 block text-sm font-semibold text-brand hover:underline"
               >
-                Enter {profile.toli.name} Chat →
+                Enter {toliName ?? toliChannelQuery.data.toli?.name ?? "Toli"} Chat →
               </Link>
             ) : (
               <p className="mt-2 text-xs text-ink-subtle">

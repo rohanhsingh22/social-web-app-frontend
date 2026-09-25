@@ -975,7 +975,16 @@ function ToliSettingsSection() {
             <ToliAvatarPicker
               avatars={targetedToli.avatars}
               toliName={targetedToli.name}
-              value={avatarKey ?? profile.profilePicture?.toliAvatarKey ?? null}
+              // Display-only fallback: when the persisted picture is the
+              // login photo, `toliAvatarKey` is null, so reflect the provider
+              // choice explicitly (does not affect the save diff above).
+              value={
+                avatarKey ??
+                (profile.profilePicture?.type === "provider"
+                  ? PROVIDER_AVATAR_VALUE
+                  : (profile.profilePicture?.toliAvatarKey ?? null))
+              }
+              providerAvatarUrl={profile.avatarUrl}
               onChange={(key) => {
                 setAvatarKey(key);
                 setSaved(false);
@@ -1052,6 +1061,7 @@ export function SettingsPage() {
       city: true,
       primaryLanguage: true,
       languages: true,
+      interests: true,
     });
 
   const [saved, setSaved] = useState(false);
@@ -1080,6 +1090,7 @@ export function SettingsPage() {
         city: true,
         primaryLanguage: true,
         languages: true,
+        interests: true,
       },
     );
   }, [settings]);
@@ -1191,6 +1202,7 @@ export function SettingsPage() {
       city: true,
       primaryLanguage: true,
       languages: true,
+      interests: true,
     };
 
     setLocalTheme(defaultTheme);
@@ -1766,6 +1778,21 @@ export function SettingsPage() {
                       onChange={(value) =>
                         handleVisibilityChange(
                           "languages",
+                          value,
+                        )
+                      }
+                    />
+
+                    <VisibilityItem
+                      icon={Sparkles}
+                      title="Interests"
+                      description="Show your interests."
+                      checked={
+                        localVisibility.interests ?? true
+                      }
+                      onChange={(value) =>
+                        handleVisibilityChange(
+                          "interests",
                           value,
                         )
                       }

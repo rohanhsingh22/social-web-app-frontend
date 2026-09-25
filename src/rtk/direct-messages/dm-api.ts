@@ -54,6 +54,9 @@ export function useDmMessages(
     conversationId && userId
       ? { conversationId, userId }
       : skipToken,
+    // Same stale-cache reason as useChannelMessages: refetch latest page on
+    // mount / conversation switch so new DMs appear after navigating back.
+    { refetchOnMountOrArgChange: true },
   );
 }
 

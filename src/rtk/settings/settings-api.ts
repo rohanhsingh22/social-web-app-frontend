@@ -12,6 +12,7 @@ export type ProfileVisibility = {
   city?: boolean;
   primaryLanguage?: boolean;
   languages?: boolean;
+  interests?: boolean;
 };
 
 export type UserSettings = {

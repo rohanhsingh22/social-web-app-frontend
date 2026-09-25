@@ -7,6 +7,8 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { ChannelList } from "@/features/channels/channel-list";
 import { useChannels } from "@/features/channels/api";
+import { useAuthSession } from "@/features/auth/api";
+import { useMyToliChannel } from "@/features/toli/api";
 import { NotificationBellIcon } from "@/features/notifications/notification-bell";
 
 const navItems = [
@@ -22,6 +24,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const channelsQuery = useChannels();
   const channels = channelsQuery.data ?? [];
+  const authQuery = useAuthSession();
+  const profile = authQuery.data?.profile;
+  // A member's Toli room lives outside the public list, so the sidebar must
+  // fetch and pass it explicitly — otherwise desktop never shows "My Toli".
+  // Gate on the nested ref or the scalar id (session shapes vary).
+  const hasToli = Boolean(profile?.toli ?? profile?.toliId);
+  const toliChannelQuery = useMyToliChannel(Boolean(authQuery.data) && hasToli);
 
   const activeSlug =
     pathname === "/"
@@ -94,6 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             channels={channels}
             isLoading={channelsQuery.isLoading}
             showHeader={false}
+            toliChannel={toliChannelQuery.data ?? null}
           />
         </div>
 

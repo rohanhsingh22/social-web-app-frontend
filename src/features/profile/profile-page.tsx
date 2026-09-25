@@ -1,9 +1,14 @@
 import { Suspense, useEffect, useState } from "react";
 import {
+  BadgeCheck,
+  Cake,
   CalendarDays,
+  Clock,
   Copy,
   Check,
   Globe,
+  Heart,
+  Languages,
   LogOut,
   MapPin,
   Palette,
@@ -11,6 +16,7 @@ import {
   Shield,
   UserRound,
   Users,
+  X,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -18,6 +24,13 @@ import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession, useLogout } from "@/features/auth/api";
 import { useMyProfile, usePublicProfile, useUpdateMyProfile } from "@/features/profile/api";
+import { useSearchUsersQuery } from "@/rtk/users/users-api";
+import {
+  useAcceptRequestMutation,
+  useCancelRequestMutation,
+  useCreateConnectionRequestMutation,
+  useRejectRequestMutation,
+} from "@/rtk/connections/connections-api";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +110,76 @@ type ProfileFormState = {
   outfitColor: string;
   primaryLanguage: string;
   languages: string;
+  interests: string;
 };
+
+function formatDateOnly(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  // Backend sends ISO (dob is a DATE column). Parse as UTC date-only so the
+  // day never shifts with the viewer's timezone.
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const formatted = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+  ).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return formatted || null;
+}
+
+function formatMonthYear(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) {
+    return null;
+  }
+  return new Date(time).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+  });
+}
+
+function ChipList({ items, emptyText }: { items: string[]; emptyText: string }) {
+  if (items.length === 0) {
+    return <p className="text-sm text-ink-muted">{emptyText}</p>;
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item}
+          className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-medium text-ink"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function formatFriendship(iso: string | null | undefined): string | null {
+  if (!iso) {
+    return null;
+  }
+  const elapsed = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(elapsed) || elapsed < 0) {
+    return null;
+  }
+  const days = Math.floor(elapsed / 86400000);
+  if (days <= 0) {
+    return "Connected today";
+  }
+  return `Friends for ${days} day${days === 1 ? "" : "s"}`;
+}
 
 function toFormState(profile: Profile): ProfileFormState {
   const config = profile.characterConfig ?? DEFAULT_CHARACTER_CONFIG;
@@ -118,6 +200,7 @@ function toFormState(profile: Profile): ProfileFormState {
       config.outfitColor ?? DEFAULT_CHARACTER_CONFIG.outfitColor ?? "#3b82f6",
     primaryLanguage: profile.primaryLanguage ?? "",
     languages: profile.languages.join(", "),
+    interests: profile.interests.join(", "),
   };
 }
 
@@ -257,6 +340,11 @@ export function ProfilePage() {
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
+
+      interests: form.interests
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
     });
 
     setOpen(false);
@@ -352,8 +440,13 @@ export function ProfilePage() {
                         </div>
 
                         <p className="mt-1 truncate text-sm text-ink-muted">
-                          {currentProfile.publicUserId}
+                          @{currentProfile.username}
                         </p>
+                        {currentProfile.publicUserId ? (
+                          <p className="mt-0.5 truncate font-mono text-xs text-ink-subtle">
+                            {currentProfile.publicUserId}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
@@ -366,18 +459,9 @@ export function ProfilePage() {
                         <Pencil className="h-4 w-4" />
                         Edit Profile
                       </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="shrink-0 border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
-                        onClick={() => {
-                          /* dummy — no navigation */
-                        }}
-                      >
-                        Connect
-                      </Button>
-                    )}
+                    ) : publicUserId ? (
+                      <ConnectionAction publicUserId={publicUserId} />
+                    ) : null}
                   </div>
 
                   {/* ------------------------------------------------
@@ -401,10 +485,31 @@ export function ProfilePage() {
                       </div>
                     ) : null}
 
+                    {currentProfile.gender ? (
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs capitalize text-ink-muted">
+                        <UserRound className="h-3.5 w-3.5" />
+                        {currentProfile.gender}
+                      </div>
+                    ) : null}
+
+                    {formatDateOnly(currentProfile.dob) ? (
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
+                        <Cake className="h-3.5 w-3.5" />
+                        {formatDateOnly(currentProfile.dob)}
+                      </div>
+                    ) : null}
+
                     {currentProfile.primaryLanguage ? (
                       <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
                         <Globe className="h-3.5 w-3.5" />
                         {currentProfile.primaryLanguage}
+                      </div>
+                    ) : null}
+
+                    {formatMonthYear(currentProfile.createdAt) ? (
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
+                        <Clock className="h-3.5 w-3.5" />
+                        Joined {formatMonthYear(currentProfile.createdAt)}
                       </div>
                     ) : null}
                   </div>
@@ -427,23 +532,64 @@ export function ProfilePage() {
                         <p className="line-clamp-4 text-sm leading-6 text-ink-muted">
                           {currentProfile.bio?.trim()
                             ? currentProfile.bio
-                            : "No bio added yet."}
+                            : isOwnProfile
+                              ? "No bio added yet."
+                              : "Not shared."}
                         </p>
                       </div>
 
-                      {/* Stats */}
-                      <div className="min-h-0 flex-1 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
-                        <h2 className="mb-3 font-semibold text-ink">Stats</h2>
+                      {/* Languages */}
+                      <div className="shrink-0 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Languages className="h-4 w-4 text-brand" />
 
-                        <div className="flex h-[calc(100%-32px)] min-h-25 items-center justify-center rounded-lg border border-dashed border-line">
-                          <span className="text-sm text-ink-muted">
-                            Comming Soon
-                          </span>
+                          <h2 className="font-semibold text-ink">Languages</h2>
                         </div>
+
+                        <ChipList
+                          items={
+                            currentProfile.primaryLanguage
+                              ? [
+                                  currentProfile.primaryLanguage,
+                                  ...currentProfile.languages.filter(
+                                    (language) =>
+                                      language !==
+                                      currentProfile.primaryLanguage,
+                                  ),
+                                ]
+                              : currentProfile.languages
+                          }
+                          emptyText={
+                            isOwnProfile
+                              ? "Add languages you speak from Edit Profile."
+                              : "Not shared."
+                          }
+                        />
+                      </div>
+
+                      {/* Interests */}
+                      <div className="shrink-0 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Heart className="h-4 w-4 text-brand" />
+
+                          <h2 className="font-semibold text-ink">Interests</h2>
+                        </div>
+
+                        <ChipList
+                          items={currentProfile.interests}
+                          emptyText={
+                            isOwnProfile
+                              ? "Add your interests from Edit Profile."
+                              : "Not shared."
+                          }
+                        />
                       </div>
                     </div>
 
-                    {/* CHARACTER */}
+                    {/* CHARACTER — hidden on others' profiles when the owner
+                        keeps it private (backend nulls it) or unset, rather
+                        than showing a default mannequin. */}
+                    {isOwnProfile || currentProfile.characterConfig ? (
                     <div className="min-h-0 overflow-hidden rounded-xl border border-line bg-background/40 p-4 lg:p-5">
                       <div className="flex h-full min-h-0 flex-col">
                         <div className="flex shrink-0 items-center justify-between">
@@ -479,6 +625,7 @@ export function ProfilePage() {
                         </div>
                       </div>
                     </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -520,6 +667,22 @@ export function ProfilePage() {
                   {currentProfile.publicUserId ? (
                     <HiRotoliIdDisplay publicUserId={currentProfile.publicUserId} />
                   ) : null}
+
+                  {/* Username */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+                      <UserRound className="h-4 w-4 text-ink-muted" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-ink">
+                        Username
+                      </p>
+                      <p className="truncate text-[11px] text-ink-muted">
+                        @{currentProfile.username}
+                      </p>
+                    </div>
+                  </div>
 
                   {/* Location */}
                   {currentProfile.region ? (
@@ -572,6 +735,72 @@ export function ProfilePage() {
                       </div>
                     </div>
                   ) : null}
+
+                  {/* Birthday */}
+                  {formatDateOnly(currentProfile.dob) ? (
+                    <div className="flex items-center gap-2.5">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+                        <Cake className="h-4 w-4 text-ink-muted" />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium text-ink">Birthday</p>
+                        <p className="text-[11px] text-ink-muted">
+                          {formatDateOnly(currentProfile.dob)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Languages */}
+                  {currentProfile.languages.length > 0 ? (
+                    <div className="flex items-center gap-2.5">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+                        <Languages className="h-4 w-4 text-ink-muted" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-ink">Languages</p>
+                        <p className="truncate text-[11px] text-ink-muted">
+                          {currentProfile.languages.join(", ")}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Interests */}
+                  {currentProfile.interests.length > 0 ? (
+                    <div className="flex items-center gap-2.5">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+                        <Heart className="h-4 w-4 text-ink-muted" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-ink">Interests</p>
+                        <p className="truncate text-[11px] text-ink-muted">
+                          {currentProfile.interests.join(", ")}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Member since */}
+                  {formatMonthYear(currentProfile.createdAt) ? (
+                    <div className="flex items-center gap-2.5">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+                        <Clock className="h-4 w-4 text-ink-muted" />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium text-ink">
+                          Member since
+                        </p>
+                        <p className="text-[11px] text-ink-muted">
+                          {formatMonthYear(currentProfile.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -585,12 +814,29 @@ export function ProfilePage() {
                     <Users className="h-5 w-5 text-brand" />
                   </div>
 
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h2 className="text-sm font-semibold text-ink">Toli</h2>
 
-                    <p className="mt-0.5 text-xs text-ink-muted">Coming soon</p>
+                    {currentProfile.toli ? (
+                      <div className="mt-1">
+                        <ToliBadge name={currentProfile.toli.name} />
+                      </div>
+                    ) : (
+                      <p className="mt-0.5 text-xs text-ink-muted">
+                        No Toli selected
+                      </p>
+                    )}
                   </div>
                 </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/settings")}
+                  className="mt-3 w-full"
+                >
+                  Manage Toli
+                </Button>
               </div>
 
               {/* --------------------------------------------------
@@ -927,6 +1173,26 @@ export function ProfilePage() {
                 />
               </Label>
 
+              {/* Interests */}
+              <Label className="grid gap-2">
+                <span>Interests</span>
+
+                <Input
+                  value={form.interests}
+                  placeholder="Music, Gaming, Art"
+                  onChange={(event) =>
+                    setForm((current) =>
+                      current
+                        ? {
+                            ...current,
+                            interests: event.target.value,
+                          }
+                        : current,
+                    )
+                  }
+                />
+              </Label>
+
               {/* Bio */}
               <Label className="grid gap-2">
                 <span>Bio</span>
@@ -995,6 +1261,179 @@ export function ProfilePage() {
       </Sheet>
       ) : null}
     </AppShell>
+  );
+}
+
+function ConnectionAction({ publicUserId }: { publicUserId: string }) {
+  // Like the connections lists, this polls lightly + refetches on mount:
+  // the peer's actions (cancel/accept) arrive with no socket push yet.
+  const searchQuery = useSearchUsersQuery(publicUserId, {
+    pollingInterval: 10_000,
+    refetchOnMountOrArgChange: true,
+  });
+  const [createRequest, createState] = useCreateConnectionRequestMutation();
+  const [acceptRequest, acceptState] = useAcceptRequestMutation();
+  const [rejectRequest, rejectState] = useRejectRequestMutation();
+  const [cancelRequest, cancelState] = useCancelRequestMutation();
+  const [error, setError] = useState<string | null>(null);
+
+  const connection = searchQuery.data?.users[0]?.connection ?? null;
+  const busy =
+    createState.isLoading ||
+    acceptState.isLoading ||
+    rejectState.isLoading ||
+    cancelState.isLoading ||
+    searchQuery.isFetching;
+
+  async function run(
+    action: () => Promise<unknown>,
+    fallbackError: string,
+  ) {
+    setError(null);
+    try {
+      await action();
+      // accept/reject/cancel only invalidate ["Connections"], so refresh the
+      // status lookup explicitly (create already invalidates UserSearch too;
+      // a second refresh is harmless).
+      await searchQuery.refetch();
+    } catch {
+      setError(fallbackError);
+      await searchQuery.refetch();
+    }
+  }
+
+  const loading = searchQuery.isLoading && !connection;
+
+  if (loading) {
+    return (
+      <Button type="button" variant="outline" disabled className="shrink-0">
+        Loading...
+      </Button>
+    );
+  }
+
+  // No row, or a dead row (declined/cancelled/blocked) — a fresh request
+  // reuses the row server-side.
+  if (
+    !connection ||
+    connection.status === "rejected" ||
+    connection.status === "cancelled" ||
+    connection.status === "blocked"
+  ) {
+    return (
+      <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          className="border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+          onClick={() =>
+            void run(
+              () => createRequest({ receiverUserId: publicUserId }).unwrap(),
+              "Could not send the request. Please try again.",
+            )
+          }
+        >
+          {createState.isLoading ? "Sending..." : "Connect"}
+        </Button>
+        {error ? (
+          <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (connection.status === "accepted") {
+    const duration = formatFriendship(
+      connection.updatedAt ?? connection.createdAt,
+    );
+    const since = formatMonthYear(
+      connection.updatedAt ?? connection.createdAt ?? undefined,
+    );
+    return (
+      <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-500">
+          <BadgeCheck className="h-4 w-4" aria-hidden />
+          Connected
+        </span>
+        {duration || since ? (
+          <p className="text-[11px] text-ink-subtle">
+            {duration}
+            {duration && since ? " · " : ""}
+            {since ? `since ${since}` : ""}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  // Pending request.
+  if (connection.direction === "received") {
+    return (
+      <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            disabled={busy}
+            className="shrink-0"
+            onClick={() =>
+              void run(
+                () => acceptRequest(connection.id).unwrap(),
+                "Could not accept the request. Please try again.",
+              )
+            }
+          >
+            {acceptState.isLoading ? "Accepting..." : "Accept"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            className="shrink-0 border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+            onClick={() =>
+              void run(
+                () => rejectRequest(connection.id).unwrap(),
+                "Could not decline the request. Please try again.",
+              )
+            }
+          >
+            Decline
+          </Button>
+        </div>
+        <p className="text-[11px] text-ink-subtle">
+          Wants to connect with you
+        </p>
+        {error ? (
+          <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+        <Check className="h-4 w-4" aria-hidden />
+        Request sent
+      </span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() =>
+          void run(
+            () => cancelRequest(connection.id).unwrap(),
+            "Could not cancel the request. Please try again.",
+          )
+        }
+        className="inline-flex items-center gap-1 text-[11px] text-ink-subtle transition-colors hover:text-ink disabled:opacity-50"
+      >
+        <X className="h-3 w-3" aria-hidden />
+        {cancelState.isLoading ? "Cancelling..." : "Cancel request"}
+      </button>
+      {error ? (
+        <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+      ) : null}
+    </div>
   );
 }
 

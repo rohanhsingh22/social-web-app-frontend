@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type ShowcaseAvatarProps = {
@@ -16,6 +17,14 @@ export function ShowcaseAvatar({
   className,
 }: ShowcaseAvatarProps) {
   const initial = alt.charAt(0).toUpperCase();
+  const [failed, setFailed] = useState(false);
+
+  // Reset the error flag whenever the source changes so a fresh URL retries.
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  const showImage = Boolean(src) && !failed;
 
   return (
     <div
@@ -25,10 +34,11 @@ export function ShowcaseAvatar({
       )}
       style={{ width, height }}
     >
-      {src ? (
+      {showImage ? (
         <img
-          src={src}
+          src={src ?? undefined}
           alt={alt}
+          onError={() => setFailed(true)}
           className="h-full w-full object-cover"
         />
       ) : (

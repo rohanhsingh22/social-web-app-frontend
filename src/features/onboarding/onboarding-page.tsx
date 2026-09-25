@@ -283,7 +283,13 @@ export function OnboardingPage() {
                 <ToliAvatarPicker
                   avatars={targetedToli.avatars}
                   toliName={targetedToli.name}
-                  value={avatarKey}
+                  value={
+                    avatarKey ??
+                    (profile?.profilePicture?.type === "provider"
+                      ? PROVIDER_AVATAR_VALUE
+                      : null)
+                  }
+                  providerAvatarUrl={profile?.avatarUrl ?? null}
                   onChange={setAvatarKey}
                 />
               </div>

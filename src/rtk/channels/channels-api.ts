@@ -96,5 +96,11 @@ export function useChannel(slug?: string) {
 export function useChannelMessages(slug?: string, cursor?: string | null) {
   return useChannelMessagesQuery(
     slug ? { slug, cursor: cursor ?? null } : skipToken,
+    // Always refetch the latest page on mount / channel switch. Without
+    // this, RTK Query serves the cached first page (newest 50 at fetch time)
+    // for `keepUnusedDataFor`, while live socket messages live only in
+    // ephemeral component state that is discarded on switch — so returning
+    // to a channel showed the old 50 without new messages.
+    { refetchOnMountOrArgChange: true },
   );
 }

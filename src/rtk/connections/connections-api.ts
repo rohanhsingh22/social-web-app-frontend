@@ -98,3 +98,24 @@ export const {
   useCancelRequestMutation,
   useRemoveConnectionMutation,
 } = connectionsApi;
+
+// Connection state changes come from the OTHER user (request/cancel/accept),
+// and there is no socket push for them yet — so these lists poll lightly and
+// always refetch on mount/return. Without this, a received request (or a
+// peer's cancel) stays invisible until a full page refresh.
+const LIVE_QUERY_OPTIONS = {
+  pollingInterval: 10_000,
+  refetchOnMountOrArgChange: true,
+} as const;
+
+export function useConnections() {
+  return useConnectionsQuery(undefined, LIVE_QUERY_OPTIONS);
+}
+
+export function useReceivedRequests() {
+  return useReceivedRequestsQuery(undefined, LIVE_QUERY_OPTIONS);
+}
+
+export function useSentRequests() {
+  return useSentRequestsQuery(undefined, LIVE_QUERY_OPTIONS);
+}

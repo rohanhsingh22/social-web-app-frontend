@@ -8,6 +8,9 @@ export type UserSummary = {
   status?: "active" | "muted" | "banned" | "deleted";
   profilePicture?: ProfilePicture;
   toli?: ToliRef | null;
+  // Scalar membership id. Session payloads may carry `toliId` without the
+  // nested `toli` object — gates must check `toli ?? toliId`.
+  toliId?: string | null;
 };
 
 export type Channel = {
@@ -212,6 +215,7 @@ export type Profile = UserSummary & {
   interests: string[];
   isComplete: boolean;
   publicUserId?: string;
+  createdAt?: string;
 };
 
 export type SearchUserProfile = {
@@ -229,8 +233,10 @@ export type SearchUserProfile = {
 
 export type SearchUserConnection = {
   id: string;
-  status: "pending" | "accepted" | "blocked" | "cancelled";
+  status: "pending" | "accepted" | "rejected" | "blocked" | "cancelled";
   direction: "sent" | "received" | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 export type SearchUserResult = {
   id: string;

@@ -118,6 +118,12 @@ export function normalizeUser(value: unknown): UserSummary {
       record.profilePicture ?? record.profile_picture ?? profile,
     ),
     toli: normalizeToliRef(record.toli ?? profile.toli),
+    // Scalar fallback: session payloads (e.g. /auth/me) may carry `toliId`
+    // without the nested `toli` object. Keep it so membership gates work.
+    toliId:
+      asOptionalString(
+        record.toliId ?? record.toli_id ?? profile.toliId ?? profile.toli_id,
+      ) ?? null,
     role: asString(record.role, "user") as UserSummary["role"],
     status: asString(record.status, "active") as UserSummary["status"],
   };
@@ -151,6 +157,9 @@ export function normalizeProfile(value: unknown): Profile {
     avatarUrl: asOptionalString(profile.avatarUrl ?? profile.avatar_url, user.avatarUrl),
     profilePicture: normalizeProfilePicture(profile),
     toli: normalizeToliRef(profile.toli),
+    // Scalar fallback, see normalizeUser: membership gates must also accept
+    // a bare `toliId` when the nested object is absent.
+    toliId: asOptionalString(profile.toliId ?? profile.toli_id) ?? null,
     bio: asString(profile.bio, ""),
     dob: asString(profile.dob ?? profile.dateOfBirth ?? profile.date_of_birth, ""),
     ageGroup: asString(profile.ageGroup ?? profile.age_group, ""),
@@ -163,6 +172,7 @@ export function normalizeProfile(value: unknown): Profile {
     interests: asStringArray(profile.interests),
     isComplete: asBoolean(profile.isComplete ?? profile.is_complete, false),
     publicUserId: asOptionalString(profile.publicUserId ?? profile.public_user_id),
+    createdAt: asOptionalString(profile.createdAt ?? profile.created_at),
   };
 }
 
@@ -182,7 +192,13 @@ export function normalizeProfilePicture(value: unknown): ProfilePicture {
   const record = isRecord(root) ? root : {};
   const rawSource = record.profilePicture ?? record.profile_picture;
   const source = isRecord(rawSource) ? rawSource : record;
-  const type = source.type === "toli" ? "toli" : "provider";
+  // Session payloads (/auth/me, /auth/refresh) carry scalar columns instead
+  // of a nested object. Honor them so session data normalizes identically to
+  // /profiles/me — otherwise Toli users flip between their Toli avatar and
+  // the login photo/initial depending on which query rendered.
+  const rawType =
+    source.type ?? source.profilePictureType ?? source.profile_picture_type;
+  const type = rawType === "toli" ? "toli" : "provider";
 
   return {
     type,
@@ -439,10 +455,14 @@ export function normalizePageInfo(value: unknown): PageInfo {
 }
 
 export function normalizeChannelMessagePage(value: unknown): ChannelMessagePage {
-  const record = isRecord(value) ? value : {};
+  // Unwrap the `{ data: { messages, pageInfo } }` envelope first: without
+  // this, pageInfo always normalized to { hasMore: false, nextCursor: null }
+  // and "Load older messages" never appeared.
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
 
   const messages = normalizeChannelMessages(
-    record.messages ?? pickArray(value, ["messages", "data", "items"]),
+    record.messages ?? pickArray(payload, ["messages", "data", "items"]),
   );
 
   return {
@@ -469,6 +489,8 @@ function parseSearchConnection(value: unknown): SearchUserConnection | null {
     direction:
       (asOptionalString(raw.direction) ??
         null) as SearchUserConnection["direction"],
+    createdAt: asOptionalString(raw.createdAt ?? raw.created_at) ?? null,
+    updatedAt: asOptionalString(raw.updatedAt ?? raw.updated_at) ?? null,
   };
 }
 

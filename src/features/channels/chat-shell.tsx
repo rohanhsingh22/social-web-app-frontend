@@ -77,8 +77,12 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   // endpoints; they never appear in the public channel queries above.
   const isLoggedIn = Boolean(authQuery.data);
   const myToli = authQuery.data?.profile?.toli;
+  // Gate on the nested ref or the scalar id: session shapes vary (/auth/me
+  // historically carried only `toliId`), and the channel query itself is the
+  // source of truth for membership display.
+  const hasToli = Boolean(myToli ?? authQuery.data?.profile?.toliId);
   const isToliRoute = initialSlug?.startsWith("toli-") ?? false;
-  const myToliChannelQuery = useMyToliChannel(isLoggedIn && Boolean(myToli));
+  const myToliChannelQuery = useMyToliChannel(isLoggedIn && hasToli);
   const myToliMessagesQuery = useMyToliChannelMessages(
     null,
     isToliRoute &&
@@ -613,7 +617,7 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                 </Button>
               </div>
             ) : null}
-            {isLoggedIn && myToli && myToliChannelQuery.data ? (
+            {isLoggedIn && hasToli && myToliChannelQuery.data ? (
               <div className="mt-4 rounded-xl border border-line bg-surface-muted p-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-ink-subtle">
                   My Toli
@@ -628,7 +632,13 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                   <span className="truncate text-sm font-semibold text-ink">
                     {myToliChannelQuery.data.name}
                   </span>
-                  <ToliBadge name={myToli.name} />
+                  <ToliBadge
+                    name={
+                      myToli?.name ??
+                      myToliChannelQuery.data.toli?.name ??
+                      "Toli"
+                    }
+                  />
                 </button>
               </div>
             ) : null}

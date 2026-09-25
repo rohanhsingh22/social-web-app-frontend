@@ -13,6 +13,25 @@ export type SelectToliInput = {
   toliId: string | null;
 };
 
+// The backend wraps payloads as `{ data: { channel } }`. Unwrap recursively
+// (same as channels-api): a single-level unwrap leaves `{ channel }`, which
+// normalizeChannel turns into `id: "unknown"` → null, hiding the room forever.
+function unwrapToliChannelResponse(response: unknown): unknown {
+  if (typeof response !== "object" || response === null || Array.isArray(response)) {
+    return response;
+  }
+
+  if ("channel" in response) {
+    return response.channel;
+  }
+
+  if ("data" in response) {
+    return unwrapToliChannelResponse(response.data);
+  }
+
+  return response;
+}
+
 export const toliApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     tolis: builder.query<Toli[], void>({
@@ -42,11 +61,7 @@ export const toliApi = baseApi.injectEndpoints({
     myToliChannel: builder.query<Channel | null, void>({
       query: () => "/channels/toli/mine",
       transformResponse: (response: unknown) => {
-        if (typeof response !== "object" || response === null) {
-          return null;
-        }
-        const record = response as Record<string, unknown>;
-        const payload = ("channel" in record ? record.channel : record.data) ?? record;
+        const payload = unwrapToliChannelResponse(response);
         if (payload === null || payload === undefined) {
           return null;
         }
@@ -96,5 +111,8 @@ export function useMyToliChannelMessages(
 ) {
   return useMyToliChannelMessagesQuery(
     enabled ? { cursor: cursor ?? null } : skipToken,
+    // Same stale-cache reason as useChannelMessages: refetch latest page on
+    // mount so returning to the Toli room shows new messages.
+    { refetchOnMountOrArgChange: true },
   );
 }

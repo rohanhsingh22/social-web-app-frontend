@@ -5,9 +5,9 @@ import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import { useLazySearchUsersQuery } from "@/rtk/users/users-api";
 import {
-  useConnectionsQuery,
-  useReceivedRequestsQuery,
-  useSentRequestsQuery,
+  useConnections,
+  useReceivedRequests,
+  useSentRequests,
   useCreateConnectionRequestMutation,
   useAcceptRequestMutation,
   useRejectRequestMutation,
@@ -88,8 +88,8 @@ export function ConnectionsPage() {
 }
 
 function RequestsTab() {
-  const receivedQuery = useReceivedRequestsQuery();
-  const sentQuery = useSentRequestsQuery();
+  const receivedQuery = useReceivedRequests();
+  const sentQuery = useSentRequests();
 
   const isLoading = receivedQuery.isLoading || sentQuery.isLoading;
   const received = receivedQuery.data ?? [];
@@ -151,7 +151,7 @@ function RequestsTab() {
 }
 
 function ConnectionsTab() {
-  const connectionsQuery = useConnectionsQuery();
+  const connectionsQuery = useConnections();
 
   if (connectionsQuery.isLoading) {
     return (
