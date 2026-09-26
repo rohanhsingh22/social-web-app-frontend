@@ -196,7 +196,7 @@ function EditSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+    <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand to-[#5B3FF5] text-xs font-black text-white shadow-md shadow-brand/25">
           {step}
@@ -512,15 +512,15 @@ export function ProfilePage() {
                 LEFT / MAIN PROFILE
                 ====================================================== */}
 
-            <main className="rounded-[1.75rem] border border-line bg-surface/80 shadow-sm backdrop-blur">
+            <main className="rounded-2xl border border-line bg-surface/80 shadow-sm backdrop-blur">
               <div className="flex flex-col">
                 {/* --------------------------------------------------
                     COVER
                     -------------------------------------------------- */}
 
-                <div className="relative h-52 shrink-0 overflow-hidden rounded-t-[1.75rem] lg:h-60">
+                <div className="relative h-52 shrink-0 overflow-hidden rounded-t-2xl lg:h-60">
                   {/* Main gradient */}
-                  <div className="absolute inset-0 bg-linear-to-br from-[#172b67] via-[#253c91] to-[#4b267d]" />
+                  <div className="absolute inset-0 bg-brand-soft" />
 
                   {/* Decorative glow */}
                   <div className="orb-drift absolute -left-20 -top-32 h-80 w-80 rounded-full bg-purple-500/30 blur-3xl" />
@@ -557,7 +557,7 @@ export function ProfilePage() {
                           type="button"
                           onClick={() => setPictureOpen(true)}
                           aria-label={`View ${currentProfile.displayName}'s profile picture`}
-                          className="cursor-pointer rounded-full bg-gradient-to-br from-brand via-[#5B3FF5] to-[#D94FE8] p-[3px] shadow-xl shadow-brand/20 outline-none transition hover:opacity-95 focus-visible:ring-2 focus-visible:ring-brand"
+                          className="cursor-pointer rounded-full bg-brand p-[3px] shadow-xl shadow-brand/20 outline-none transition hover:opacity-95 focus-visible:ring-2 focus-visible:ring-brand"
                         >
                           <span className="block rounded-full bg-surface p-[3px]">
                             <UserAvatar
@@ -583,7 +583,7 @@ export function ProfilePage() {
 
                           {currentProfile.role &&
                           currentProfile.role !== "user" ? (
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2 py-1 text-[10px] font-bold text-brand">
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2 py-1 text-[11px] font-bold text-brand">
                               <Shield className="h-3 w-3" />
                               {currentProfile.role}
                             </span>
@@ -734,7 +734,7 @@ export function ProfilePage() {
                     {profileTab === "about" ? (
                       <div className="grid gap-4">
                       {/* About Me */}
-                      <div className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+                      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
                         <div className="mb-2 flex items-center gap-2">
                           <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-soft text-brand-ink">
                             <UserRound className="h-4 w-4" aria-hidden />
@@ -752,7 +752,7 @@ export function ProfilePage() {
                       </div>
 
                       {/* Languages */}
-                      <div className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+                      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
                         <div className="mb-3 flex items-center gap-2">
                           <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-soft text-brand-ink">
                             <Languages className="h-4 w-4" aria-hidden />
@@ -782,7 +782,7 @@ export function ProfilePage() {
                       </div>
 
                       {/* Interests */}
-                      <div className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+                      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
                         <div className="mb-3 flex items-center gap-2">
                           <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-soft text-brand-ink">
                             <Heart className="h-4 w-4" aria-hidden />
@@ -815,7 +815,7 @@ export function ProfilePage() {
                         than showing a default mannequin. */}
                     {profileTab === "avatar" &&
                     (isOwnProfile || currentProfile.characterConfig) ? (
-                      <div className="overflow-hidden rounded-[1.5rem] border border-line bg-surface shadow-sm">
+                      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
                         <div className="relative h-96 overflow-hidden bg-linear-to-b from-background to-surface-muted">
                           <div
                             aria-hidden
@@ -1175,7 +1175,7 @@ export function ProfilePage() {
           {/* Live identity preview */}
           {form ? (
             <div className="mt-4 shrink-0 px-4">
-              <div className="flex items-center gap-3 rounded-[1.5rem] border border-line bg-surface p-4 shadow-xl shadow-black/5">
+              <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-xl shadow-black/5">
                 <span
                   className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-xl font-black text-white shadow-md"
                   style={{
@@ -1306,7 +1306,7 @@ export function ProfilePage() {
                         className="grid h-16 place-items-center overflow-hidden rounded-2xl border border-line transition-transform hover:scale-[1.03]"
                         style={{ backgroundColor: form[option.key] }}
                       >
-                        <span className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white backdrop-blur-sm">
+                        <span className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-white backdrop-blur-sm">
                           {form[option.key]}
                         </span>
                       </span>
@@ -1669,7 +1669,7 @@ function ConnectionWidget({ publicUserId }: { publicUserId: string }) {
           {createState.isLoading ? "Sending..." : "Connect"}
         </Button>
         {error ? (
-          <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+          <p className="max-w-55 text-right text-xs text-danger-ink">{error}</p>
         ) : null}
       </div>
     );
@@ -1736,7 +1736,7 @@ function ConnectionWidget({ publicUserId }: { publicUserId: string }) {
           Wants to connect with you
         </p>
         {error ? (
-          <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+          <p className="max-w-55 text-right text-xs text-danger-ink">{error}</p>
         ) : null}
       </div>
     );
@@ -1763,7 +1763,7 @@ function ConnectionWidget({ publicUserId }: { publicUserId: string }) {
         {cancelState.isLoading ? "Cancelling..." : "Cancel request"}
       </button>
       {error ? (
-        <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+        <p className="max-w-55 text-right text-xs text-danger-ink">{error}</p>
       ) : null}
     </div>
   );
@@ -1835,7 +1835,7 @@ function ProfileSafetyRow({
         </button>
       </div>
       {error ? (
-        <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+        <p className="max-w-55 text-right text-xs text-danger-ink">{error}</p>
       ) : null}
       <ReportDialog
         target={reportTarget}

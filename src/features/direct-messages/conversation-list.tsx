@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
+import { EmptyState } from "@/components/common/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DmConversation } from "@/types/domain";
 
@@ -37,13 +38,11 @@ export function ConversationList({
       ) : null}
 
       {!isLoading && conversations.length === 0 ? (
-        <div className="p-6 text-center">
-          <p className="text-sm text-ink-muted">
-            No conversations yet.
-          </p>
-          <p className="mt-1 text-xs text-ink-subtle">
-            Accept a connection request to start chatting.
-          </p>
+        <div className="p-4">
+          <EmptyState
+            title="No conversations yet"
+            message="Accept a connection request to start chatting."
+          />
         </div>
       ) : null}
 
@@ -62,8 +61,8 @@ export function ConversationList({
               to={`/messages/${conversation.id}`}
               onClick={onSelect}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors hover:bg-surface-hover",
-                active && "bg-surface-hover",
+                "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors duration-150 hover:bg-surface-hover",
+                active && "bg-brand-soft hover:bg-brand-soft",
               )}
             >
               <UserAvatar user={profile} size={40} />

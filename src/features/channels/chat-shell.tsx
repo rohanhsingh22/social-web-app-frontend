@@ -14,6 +14,7 @@ import { HirotoliId } from "@/components/common/hirotoli-id";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { LockedPanel } from "@/components/common/locked-panel";
+import { EmptyState } from "@/components/common/empty-state";
 import {
   ReportDialog,
   type ReportTarget,
@@ -693,15 +694,6 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
         onClose={() => setReportTarget(null)}
       />
     </AppShell>
-  );
-}
-
-function EmptyState({ title, message }: { title: string; message: string }) {
-  return (
-    <div className="rounded-xl border border-dashed border-line-strong bg-surface-muted p-8 text-center">
-      <h2 className="text-base font-bold text-ink">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-ink-muted">{message}</p>
-    </div>
   );
 }
 

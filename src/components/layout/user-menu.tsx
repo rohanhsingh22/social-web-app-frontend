@@ -90,7 +90,7 @@ export function UserMenu({ showName = false }: { showName?: boolean }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-red-600 focus:text-red-600"
+          className="cursor-pointer text-danger-ink focus:text-danger-ink"
           onSelect={handleLogout}
         >
           <LogOut className="h-4 w-4" />

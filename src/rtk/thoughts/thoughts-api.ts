@@ -37,11 +37,17 @@ export const thoughtsApi = baseApi.injectEndpoints({
         normalizeThoughtPage(response),
       providesTags: ["Thoughts"],
     }),
-    forYouThoughts: builder.query<ThoughtPage, { cursor?: string | null }>({
-      query: ({ cursor }) => {
+    forYouThoughts: builder.query<
+      ThoughtPage,
+      { cursor?: string | null; deferred?: string[] }
+    >({
+      query: ({ cursor, deferred }) => {
         const params = new URLSearchParams({ limit: "20" });
         if (cursor) {
           params.set("cursor", cursor);
+        }
+        if (deferred && deferred.length > 0) {
+          params.set("deferred", deferred.join(","));
         }
         return `/thoughts/for-you?${params.toString()}`;
       },

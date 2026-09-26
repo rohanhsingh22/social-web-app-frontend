@@ -278,6 +278,9 @@ export type Thought = {
 export type ThoughtPage = {
   thoughts: Thought[];
   pageInfo: PageInfo;
+  // For You only: ranked-but-unserved ids to carry into the next request so
+  // pagination never skips. Absent on other feeds.
+  deferred?: string[];
 };
 
 export type ThoughtComment = {

@@ -12,6 +12,9 @@ import {
 } from "@/features/notifications/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/common/page-header";
+import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
 import { cn } from "@/lib/utils";
 import type { Notification } from "@/types/domain";
 
@@ -48,6 +51,7 @@ export function NotificationsPage() {
   const [loadMore, loadMoreState] = useLazyNotificationsQuery();
   const [markRead] = useMarkNotificationReadMutation();
   const [markAllRead, markAllState] = useMarkNotificationsReadMutation();
+  const [markingId, setMarkingId] = useState<string | null>(null);
 
   useEffect(() => {
     setOlder([]);
@@ -91,8 +95,18 @@ export function NotificationsPage() {
   }
 
   async function openNotification(notification: Notification) {
-    if (!notification.readAt) {
-      await markRead(notification.id);
+    // Guard rapid double-clicks: one in-flight mark per notification.
+    if (!notification.readAt && markingId !== notification.id) {
+      setMarkingId(notification.id);
+      try {
+        await markRead(notification.id).unwrap();
+      } catch {
+        // Read state converges on the next poll; navigation still proceeds.
+      } finally {
+        setMarkingId((current) =>
+          current === notification.id ? null : current,
+        );
+      }
     }
 
     const destination = destinationFor(notification);
@@ -104,28 +118,28 @@ export function NotificationsPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-6">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
-            <Bell className="h-6 w-6" aria-hidden />
-            Notifications
-            {unreadCount > 0 ? (
-              <span className="rounded-full bg-danger px-2 py-0.5 text-xs font-bold text-white">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            ) : null}
-          </h1>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={unreadCount === 0 || markAllState.isLoading}
-            onClick={() => void markAllRead({})}
-          >
-            <CheckCheck className="mr-1 h-4 w-4" aria-hidden />
-            Mark all read
-          </Button>
-        </div>
+      <section className="page-container max-w-2xl">
+        <PageHeader
+          title="Notifications"
+          subtitle="Connection requests, messages, and notices."
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={unreadCount === 0 || markAllState.isLoading}
+              onClick={() => void markAllRead({})}
+            >
+              <CheckCheck className="mr-1 h-4 w-4" aria-hidden />
+              Mark all read
+            </Button>
+          }
+        />
+        {unreadCount > 0 ? (
+          <p className="mt-2 text-sm text-ink-muted" role="status">
+            {unreadCount} unread
+          </p>
+        ) : null}
 
         <div className="mt-4 grid gap-2">
           {listQuery.isLoading ? (
@@ -141,15 +155,18 @@ export function NotificationsPage() {
           ) : null}
 
           {listQuery.isError ? (
-            <p className="rounded-xl border border-warning bg-warning-soft p-4 text-sm text-warning-ink">
-              Notifications are not reachable right now. Please try again.
-            </p>
+            <ErrorState
+              message="Notifications are not reachable right now. Please try again."
+              onRetry={() => void listQuery.refetch()}
+            />
           ) : null}
 
-          {!listQuery.isLoading && items.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-line-strong bg-surface-muted p-8 text-center text-sm text-ink-muted">
-              You are all caught up.
-            </p>
+          {!listQuery.isLoading && !listQuery.isError && items.length === 0 ? (
+            <EmptyState
+              icon={Bell}
+              title="You are all caught up"
+              message="Connection requests, new messages, and notices will appear here."
+            />
           ) : null}
 
           {items.map((notification) => {

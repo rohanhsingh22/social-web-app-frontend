@@ -55,11 +55,14 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
-      className={cn(sheetVariants({ side }), className)}
+      className={cn(sheetVariants({ side }), "p-6 pb-safe", className)}
       {...props}
     >
       {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-md text-ink-subtle transition-colors hover:bg-surface-hover hover:text-ink focus:outline-none">
+      <SheetPrimitive.Close
+        aria-label="Close panel"
+        className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-xl text-ink-subtle transition-colors duration-150 hover:bg-surface-hover hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+      >
         <X className="h-4 w-4" aria-hidden />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>

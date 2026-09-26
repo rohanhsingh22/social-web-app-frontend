@@ -24,6 +24,10 @@ import {
 } from "@/features/thoughts/api";
 import { ThoughtCard } from "@/features/thoughts/thought-card";
 import { ThoughtComposer } from "@/features/thoughts/thought-composer";
+import {
+  applyThoughtPatch,
+  type ThoughtCardPatch,
+} from "@/features/thoughts/thought-patch";
 import { ThoughtsSidebar } from "@/features/thoughts/thoughts-sidebar";
 import {
   engagementScore,
@@ -65,11 +69,13 @@ export function ThoughtsFeed() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [sort, setSort] = useState<SortMode>("latest");
   // Pagination state beyond the first page. RTK lazy pages land in their
-  // own cache entries, so the cursor/hasMore must be tracked locally —
-  // otherwise auto-scroll would re-request the same cursor forever.
+  // own cache entries, so the cursor/hasMore/deferred must be tracked
+  // locally — otherwise auto-scroll would re-request the same cursor
+  // forever (and For You would skip ranked-but-unserved thoughts).
   const [nextPage, setNextPage] = useState<{
     cursor: string | null;
     hasMore: boolean;
+    deferred: string[];
   } | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -110,12 +116,19 @@ export function ThoughtsFeed() {
           ? connections
           : forYou;
 
+  // Reset only on tab switches: background refetches (likes, posts, …)
+  // must not drop already-loaded pages or scroll position. Overlap with
+  // fresh base data is removed by id below.
   useEffect(() => {
     setOlder([]);
     setNextPage(null);
     setFetching(false);
-    setActiveTag(null);
-  }, [tab, active.data]);
+  }, [tab]);
+
+  // Guards lazy responses that land after a tab switch so page N of one
+  // tab can never be appended to another tab's list.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
 
   const initial = useMemo(
     () => active.data?.thoughts ?? [],
@@ -131,6 +144,9 @@ export function ThoughtsFeed() {
   const firstPageInfo = active.data?.pageInfo;
   const hasMore = nextPage ? nextPage.hasMore : (firstPageInfo?.hasMore ?? false);
   const cursor = nextPage ? nextPage.cursor : (firstPageInfo?.nextCursor ?? null);
+  const deferredToSend = nextPage
+    ? nextPage.deferred
+    : (active.data?.deferred ?? []);
 
   // Client-side discovery over everything loaded: hashtag filter and
   // Top/Latest sort. Server pagination is untouched.
@@ -161,25 +177,43 @@ export function ThoughtsFeed() {
     ? visible.filter((thought) => thought.id !== spotlight.id)
     : visible;
 
+  function patchOlder(id: string, patch: ThoughtCardPatch) {
+    if (patch.type === "delete") {
+      setOlder((current) => current.filter((thought) => thought.id !== id));
+      return;
+    }
+    setOlder((current) =>
+      current.map((thought) =>
+        thought.id === id ? applyThoughtPatch(thought, patch) : thought,
+      ),
+    );
+  }
+
   async function loadMore() {
     if (!cursor || !hasMore || fetching || isFiltering) {
       return;
     }
 
+    const requestTab = tabRef.current;
     setFetching(true);
     try {
       const page =
-        tab === "fresh"
+        requestTab === "fresh"
           ? await loadFresh({ cursor }).unwrap()
-          : tab === "mine"
+          : requestTab === "mine"
             ? await loadMine({ cursor }).unwrap()
-            : tab === "connections"
+            : requestTab === "connections"
               ? await loadConnections({ cursor }).unwrap()
-              : await loadForYou({ cursor }).unwrap();
+              : await loadForYou({ cursor, deferred: deferredToSend }).unwrap();
 
+      // Drop responses that arrived after a tab switch.
+      if (tabRef.current !== requestTab) {
+        return;
+      }
       setNextPage({
         cursor: page.pageInfo.nextCursor,
         hasMore: page.pageInfo.hasMore,
+        deferred: page.deferred ?? [],
       });
       setOlder((current) => {
         const ids = new Set([
@@ -195,7 +229,9 @@ export function ThoughtsFeed() {
       // RTK surfaces the error on the lazy result; the sentinel stays
       // mounted so scrolling retries automatically.
     } finally {
-      setFetching(false);
+      if (tabRef.current === requestTab) {
+        setFetching(false);
+      }
     }
   }
 
@@ -436,7 +472,7 @@ export function ThoughtsFeed() {
             <button
               type="button"
               onClick={() => setComposerOpen(true)}
-              className="mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-[1.75rem] border border-line bg-surface/80 px-4 py-3.5 text-left shadow-sm backdrop-blur transition-all outline-none hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/10 focus-visible:ring-2 focus-visible:ring-brand"
+              className="mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition-colors duration-150 outline-none hover:border-line-strong focus-visible:ring-2 focus-visible:ring-brand"
             >
               {sessionProfile ? (
                 <UserAvatar user={sessionProfile} size={40} />
@@ -487,8 +523,18 @@ export function ThoughtsFeed() {
               >
                 {(
                   [
-                    { id: "latest", label: "Latest", icon: Clock },
-                    { id: "top", label: "Top", icon: Flame },
+                    {
+                      id: "latest",
+                      label: "Latest",
+                      icon: Clock,
+                      hint: "Newest first, from the thoughts already loaded",
+                    },
+                    {
+                      id: "top",
+                      label: "Top",
+                      icon: Flame,
+                      hint: "Most loved first, from the thoughts already loaded",
+                    },
                   ] as const
                 ).map((option) => {
                   const Icon = option.icon;
@@ -499,6 +545,7 @@ export function ThoughtsFeed() {
                       type="button"
                       onClick={() => setSort(option.id)}
                       aria-pressed={selected}
+                      title={option.hint}
                       className={cn(
                         "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand",
                         selected
@@ -534,7 +581,7 @@ export function ThoughtsFeed() {
                 [1, 2, 3].map((item) => (
                   <div
                     key={item}
-                    className="rounded-[1.75rem] border border-line bg-surface/80 p-5 shadow-sm backdrop-blur"
+                    className="rounded-2xl border border-line bg-surface p-5"
                   >
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-11 w-11 rounded-full" />
@@ -550,7 +597,7 @@ export function ThoughtsFeed() {
               ) : null}
 
               {active.isError ? (
-                <div className="rounded-[1.75rem] border border-warning bg-warning-soft p-8 text-center shadow-sm">
+                <div className="rounded-2xl border border-warning bg-warning-soft p-8 text-center">
                   <p className="text-[15px] font-bold text-warning-ink">
                     Something went wrong.
                   </p>
@@ -569,7 +616,7 @@ export function ThoughtsFeed() {
               ) : null}
 
               {!active.isLoading && !active.isError && visible.length === 0 ? (
-                <div className="rounded-[1.75rem] border border-dashed border-line-strong bg-surface/80 p-10 text-center shadow-sm backdrop-blur">
+                <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-10 text-center">
                   <p className="text-xl font-extrabold text-ink">
                     {isFiltering
                       ? "No matches"
@@ -611,17 +658,17 @@ export function ThoughtsFeed() {
               ) : null}
 
               {spotlight ? (
-                <div className="feed-item relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand via-[#5B3FF5] to-[#06b6d4] p-[2px] shadow-xl shadow-brand/20">
-                  <div
-                    aria-hidden
-                    className="spotlight-sheen pointer-events-none absolute inset-y-0 w-1/3 bg-white/25 blur-xl"
-                  />
-                  <div className="rounded-[calc(2rem-2px)] bg-surface">
+                <div className="overflow-hidden rounded-2xl border-2 border-brand bg-surface">
+                  <div className="rounded-[calc(1rem-2px)] bg-surface">
                     <p className="flex items-center gap-2 px-5 pb-0 pt-4 text-[13px] font-extrabold uppercase tracking-wider text-brand-ink">
                       <Trophy className="h-4 w-4" aria-hidden />
                       Top thought
                     </p>
-                    <ThoughtCard thought={spotlight} spotlight />
+                    <ThoughtCard
+                      thought={spotlight}
+                      spotlight
+                      onPatch={patchOlder}
+                    />
                   </div>
                 </div>
               ) : null}
@@ -631,6 +678,7 @@ export function ThoughtsFeed() {
                   key={`${tab}-${thought.id}`}
                   thought={thought}
                   index={position}
+                  onPatch={patchOlder}
                 />
               ))}
 

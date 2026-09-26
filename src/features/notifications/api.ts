@@ -4,6 +4,7 @@ export {
   useNotificationsQuery,
   useLazyNotificationsQuery,
   useUnreadCount,
+  useUnreadCountQuery,
   useMarkNotificationReadMutation,
   useMarkNotificationsReadMutation,
 } from "@/rtk/notifications/notifications-api";

@@ -30,9 +30,16 @@ export function DmThread({ conversationId }: { conversationId: string }) {
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   // Actively viewing the thread clears its DM notifications (read state is
-  // maintained; no toast noise while reading).
+  // maintained; no toast noise while reading). The ref guard fires once per
+  // conversation even under StrictMode remounts, so no duplicate requests.
+  const markedConversationRef = useRef<string | null>(null);
   useEffect(() => {
-    if (isLoggedIn && conversationId) {
+    if (
+      isLoggedIn &&
+      conversationId &&
+      markedConversationRef.current !== conversationId
+    ) {
+      markedConversationRef.current = conversationId;
       void markConversationRead({ conversationId });
     }
   }, [conversationId, isLoggedIn, markConversationRead]);

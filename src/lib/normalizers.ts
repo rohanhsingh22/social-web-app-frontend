@@ -347,12 +347,17 @@ export function normalizeThought(value: unknown): Thought {
 export function normalizeThoughtPage(value: unknown): ThoughtPage {
   const payload = pickRecord(value, ["data"]);
   const record = isRecord(payload) ? payload : {};
+  const deferred = record.deferred;
+  const deferredIds = Array.isArray(deferred)
+    ? deferred.filter((id): id is string => typeof id === "string")
+    : [];
 
   return {
     thoughts: pickArray(record, ["thoughts", "data", "items"]).map(
       normalizeThought,
     ),
     pageInfo: normalizePageInfo(record.pageInfo ?? record.page_info ?? record),
+    deferred: deferredIds,
   };
 }
 

@@ -16,6 +16,23 @@ export const notificationsApi = baseApi.injectEndpoints({
         normalizeNotificationsPage(response),
       providesTags: ["Notifications"],
     }),
+    unreadCount: builder.query<{ unreadCount: number }, void>({
+      query: () => "/notifications/unread-count",
+      transformResponse: (response: unknown) => {
+        const record =
+          response && typeof response === "object" && "data" in response
+            ? (response.data as Record<string, unknown>)
+            : {};
+        const count = record.unreadCount;
+        return {
+          unreadCount:
+            typeof count === "number" && Number.isFinite(count)
+              ? count
+              : 0,
+        };
+      },
+      providesTags: ["Notifications"],
+    }),
     markNotificationRead: builder.mutation<{ ok: boolean }, string>({
       query: (id) => ({
         url: `/notifications/${id}/read`,
@@ -42,6 +59,7 @@ export const notificationsApi = baseApi.injectEndpoints({
 export const {
   useNotificationsQuery,
   useLazyNotificationsQuery,
+  useUnreadCountQuery,
   useMarkNotificationReadMutation,
   useMarkNotificationsReadMutation,
 } = notificationsApi;
@@ -54,15 +72,13 @@ export function useNotifications(enabled: boolean) {
 }
 
 export function useUnreadCount(enabled: boolean) {
-  return useNotificationsQuery(
-    { cursor: null },
-    {
-      skip: !enabled,
-      pollingInterval: 30_000,
-      selectFromResult: (result) => ({
-        ...result,
-        unreadCount: result.data?.unreadCount ?? 0,
-      }),
-    },
-  );
+  const result = useUnreadCountQuery(undefined, {
+    skip: !enabled,
+    pollingInterval: 30_000,
+  });
+
+  return {
+    ...result,
+    unreadCount: result.data?.unreadCount ?? 0,
+  };
 }

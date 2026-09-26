@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { LockedPanel } from "@/components/common/locked-panel";
+import { EmptyState } from "@/components/common/empty-state";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import { useDmConversations } from "@/features/direct-messages/api";
@@ -67,15 +68,12 @@ export function MessagesPage() {
           {conversationId ? (
             <DmThread conversationId={conversationId} />
           ) : (
-            <div className="flex h-full min-h-0 items-center justify-center">
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-ink">
-                  Select a conversation
-                </h2>
-                <p className="mt-2 text-sm text-ink-muted">
-                  Choose a conversation from the list to start chatting.
-                </p>
-              </div>
+            <div className="flex h-full min-h-0 items-center justify-center p-6">
+              <EmptyState
+                title="Select a conversation"
+                message="Choose a conversation from the list to start chatting."
+                className="w-full max-w-sm"
+              />
             </div>
           )}
         </main>

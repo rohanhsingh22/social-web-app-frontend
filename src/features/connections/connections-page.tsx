@@ -21,20 +21,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HirotoliId } from "@/components/common/hirotoli-id";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
+import { PageHeader } from "@/components/common/page-header";
+import { EmptyState } from "@/components/common/empty-state";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type {
   Connection,
   ConnectionRequest,
@@ -58,11 +53,11 @@ export function ConnectionsPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-5xl px-4 py-6">
-        <h1 className="text-2xl font-bold text-ink">Connections</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          Manage your connections, requests, and private conversations.
-        </p>
+      <section className="page-container max-w-5xl">
+        <PageHeader
+          title="Connections"
+          subtitle="Manage your connections, requests, and private conversations."
+        />
 
         <Tabs defaultValue="requests" className="mt-6">
           <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-flex">
@@ -210,7 +205,7 @@ function ConnectionCard({ connection }: { connection: Connection }) {
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4">
         {profile ? (
           <UserAvatar user={profile} size={44} />
         ) : (
@@ -236,7 +231,7 @@ function ConnectionCard({ connection }: { connection: Connection }) {
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" aria-label="More actions">
               <MoreVertical className="h-4 w-4" />
               <span className="sr-only">More actions</span>
             </Button>
@@ -253,35 +248,21 @@ function ConnectionCard({ connection }: { connection: Connection }) {
         </DropdownMenu>
       </div>
 
-      <Dialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove connection</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to remove <strong>{displayName}</strong>?
-              This will delete your connection and direct message conversation.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={removeState.isLoading}
-              onClick={() => setIsRemoveDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={removeState.isLoading}
-              onClick={handleRemove}
-            >
-              {removeState.isLoading ? "Removing…" : "Remove"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={isRemoveDialogOpen}
+        onOpenChange={setIsRemoveDialogOpen}
+        title="Remove connection"
+        description={
+          <>
+            Are you sure you want to remove <strong>{displayName}</strong>?
+            This will delete your connection and direct message conversation.
+          </>
+        }
+        confirmLabel="Remove"
+        destructive
+        confirming={removeState.isLoading}
+        onConfirm={handleRemove}
+      />
     </>
   );
 }
@@ -500,11 +481,4 @@ function UserResultCard({
   );
 }
 
-function EmptyState({ title, message }: { title: string; message: string }) {
-  return (
-    <div className="mt-4 rounded-xl border border-dashed border-line-strong bg-surface-muted p-8 text-center">
-      <h2 className="text-base font-semibold text-ink">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-ink-muted">{message}</p>
-    </div>
-  );
-}
+

@@ -12,7 +12,7 @@ const providerStyles: Record<string, string> = {
   facebook:
     "bg-[#1877f2] hover:bg-[#0d5dc8] text-white",
   google:
-    "bg-white hover:bg-gray-50 text-gray-700 border border-gray-300",
+    "bg-surface hover:bg-surface-hover text-ink border border-line",
   linkedin:
     "bg-[#0a66c2] hover:bg-[#084d93] text-white",
 };
@@ -23,7 +23,7 @@ export function ProviderLoginButton({
   provider: AuthProviderInfo;
 }) {
   const Icon = providerIcons[provider.id] ?? Globe;
-  const styles = providerStyles[provider.id] ?? "bg-gray-600 hover:bg-gray-700 text-white";
+  const styles = providerStyles[provider.id] ?? "bg-surface-muted hover:bg-surface-hover text-ink border border-line";
 
   function startLogin() {
     window.location.href = `${config.apiBaseUrl}/auth/${provider.id}`;
@@ -33,7 +33,7 @@ export function ProviderLoginButton({
     <button
       type="button"
       onClick={startLogin}
-      className={`inline-flex h-12 w-full items-center justify-center gap-3 rounded-lg px-4 text-sm font-semibold shadow-sm transition-[transform,box-shadow,background-color] duration-150 ease-out hover:shadow-md active:scale-[0.97] ${styles}`}
+      className={`inline-flex h-11 min-h-[44px] w-full items-center justify-center gap-3 rounded-xl px-4 text-sm font-semibold shadow-sm transition-[transform,box-shadow,background-color] duration-150 ease-out hover:shadow-md active:scale-[0.97] ${styles}`}
     >
       <Icon className="h-5 w-5" aria-hidden />
       Continue with {provider.displayName}

@@ -31,8 +31,13 @@ export default function HomePage() {
     return (
       <AppShell>
         <section className="grid min-h-dvh place-items-center px-4">
-          <div className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
-            Loading...
+          <div className="w-full max-w-md space-y-3 rounded-2xl border border-line bg-surface p-5">
+            <Skeleton className="h-64 w-full rounded-2xl" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <span role="status" className="sr-only">
+              Loading home…
+            </span>
           </div>
         </section>
       </AppShell>
@@ -58,8 +63,8 @@ export default function HomePage() {
     <AppShell>
       <div className="relative flex h-full flex-col">
         {hasToli ? (
-          <div className="absolute left-4 top-4 z-10 rounded-2xl border border-line bg-surface/90 p-3 backdrop-blur">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-ink-subtle">
+          <div className="absolute left-4 top-4 z-10 rounded-2xl border border-line bg-surface p-3">
+            <p className="page-header-eyebrow">
               My Toli
             </p>
             <div className="mt-1">
@@ -84,8 +89,8 @@ export default function HomePage() {
           </div>
         ) : (
           // Logged in without a Toli yet.
-          <div className="absolute left-4 top-4 z-10 rounded-2xl border border-line bg-surface/90 p-3 backdrop-blur">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-ink-subtle">
+          <div className="absolute left-4 top-4 z-10 rounded-2xl border border-line bg-surface p-3">
+            <p className="page-header-eyebrow">
               My Toli
             </p>
             <Link

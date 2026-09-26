@@ -4,9 +4,42 @@ import {
   normalizeChannelMessagePage,
   normalizeProfilePicture,
   normalizeSearchUsers,
+  normalizeThoughtPage,
   normalizeToliRef,
 } from "./normalizers";
 import { resolveToliAvatarImage } from "./toli-avatar";
+
+describe("normalizeThoughtPage", () => {
+  it("carries the For You deferred ids through the envelope", () => {
+    const page = normalizeThoughtPage({
+      data: {
+        thoughts: [],
+        pageInfo: { hasMore: true, nextCursor: "cursor-1" },
+        deferred: ["t1", "t2"],
+      },
+    });
+
+    expect(page.deferred).toEqual(["t1", "t2"]);
+  });
+
+  it("defaults deferred to empty and drops non-strings", () => {
+    const page = normalizeThoughtPage({
+      data: {
+        thoughts: [],
+        pageInfo: { hasMore: false, nextCursor: null },
+        deferred: ["t1", 42, null],
+      },
+    });
+
+    expect(page.deferred).toEqual(["t1"]);
+
+    const bare = normalizeThoughtPage({
+      data: { thoughts: [], pageInfo: { hasMore: false, nextCursor: null } },
+    });
+
+    expect(bare.deferred).toEqual([]);
+  });
+});
 
 describe("normalizeChannelMessagePage", () => {
   it("preserves pageInfo through the response envelope", () => {

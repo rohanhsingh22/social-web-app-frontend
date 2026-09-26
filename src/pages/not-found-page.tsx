@@ -1,20 +1,25 @@
 import { Link } from "react-router-dom";
+import { FileQuestion } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 
 export default function NotFoundPage() {
   return (
     <AppShell>
       <div className="grid min-h-dvh place-items-center bg-background p-6 text-center">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Page not found</h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            The page you are looking for does not exist.
+        <div className="w-full max-w-md rounded-3xl border border-line bg-surface p-8">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-surface-muted text-ink-subtle">
+            <FileQuestion className="h-6 w-6" aria-hidden />
+          </div>
+          <h1 className="page-header-title mt-4">Page not found</h1>
+          <p className="page-header-subtitle mt-2">
+            The page you are looking for does not exist. Check the address or
+            return home.
           </p>
           <Link
-            to="/"
-            className="mt-4 inline-block text-sm font-semibold text-brand hover:underline"
+            to="/home"
+            className="mt-4 inline-block text-sm font-semibold text-brand-ink hover:underline"
           >
-            Go to Channels
+            Return home
           </Link>
         </div>
       </div>

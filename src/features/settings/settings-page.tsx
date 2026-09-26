@@ -182,7 +182,7 @@ function SectionHeader({
         <h2 className="bg-gradient-to-r from-ink via-ink to-brand-ink bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
           {title}
         </h2>
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand to-[#5B3FF5] text-on-brand shadow-lg shadow-brand/25">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand text-on-brand shadow-lg shadow-brand/25">
           <Icon className="h-5 w-5" aria-hidden />
         </span>
       </div>
@@ -304,7 +304,7 @@ function ThemeOption({
       onClick={onClick}
       aria-pressed={active}
       className={[
-        "relative flex min-h-[112px] flex-1 flex-col gap-3 rounded-[1.75rem] border p-4 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand active:scale-[0.98]",
+        "relative flex min-h-[112px] flex-1 flex-col gap-3 rounded-2xl border p-4 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand active:scale-[0.98]",
         active
           ? "border-brand/50 bg-brand-soft/50 shadow-lg shadow-brand/10"
           : "border-line bg-surface/80 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/10",
@@ -382,7 +382,7 @@ function AccentOption({
 
       <span
         className={[
-          "text-[10px] font-bold",
+          "text-[11px] font-bold",
           selected ? "text-ink" : "text-ink-subtle",
         ].join(" ")}
       >
@@ -431,7 +431,7 @@ function VisibilityItem({
   return (
     <div
       className={[
-        "flex items-center gap-3 rounded-[1.5rem] border p-3.5 transition-all",
+        "flex items-center gap-3 rounded-2xl border p-3.5 transition-all",
         checked
           ? "border-line bg-surface/80"
           : "border-dashed border-line-strong bg-surface-muted/50",
@@ -453,7 +453,7 @@ function VisibilityItem({
           {title}
           <span
             className={[
-              "rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide",
+              "rounded-full px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide",
               checked
                 ? "bg-success-soft text-success-ink"
                 : "bg-surface-muted text-ink-subtle",
@@ -539,7 +539,7 @@ function ToliSettingsSection() {
   }
 
   if (profileQuery.isLoading || !profile) {
-    return <Skeleton className="h-64 w-full rounded-[1.75rem]" />;
+    return <Skeleton className="h-64 w-full rounded-2xl" />;
   }
 
   return (
@@ -557,7 +557,7 @@ function ToliSettingsSection() {
         </div>
       ) : null}
 
-      <Card className="rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+      <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
         <CardContent className="p-5">
           {tolisQuery.isLoading ? (
             <p className="text-xs text-ink-muted">Loading Tolies...</p>
@@ -576,7 +576,7 @@ function ToliSettingsSection() {
       </Card>
 
       {targetedToli ? (
-        <Card className="rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+        <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
           <CardContent className="p-5">
             <ToliAvatarPicker
               avatars={targetedToli.avatars}
@@ -652,7 +652,7 @@ function BlockedUsersSection() {
   }
 
   return (
-    <Card className="overflow-hidden rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+    <Card className="overflow-hidden rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
       <CardHeader className="border-b border-line/70 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -940,10 +940,10 @@ export function SettingsPage() {
       <AppShell>
         <div className="mx-auto max-w-6xl px-6 py-8">
           <div className="space-y-6">
-            <Skeleton className="h-36 w-full rounded-[2rem]" />
+            <Skeleton className="h-36 w-full rounded-2xl" />
             <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-              <Skeleton className="h-[500px] rounded-[1.75rem]" />
-              <Skeleton className="h-[500px] rounded-[1.75rem]" />
+              <Skeleton className="h-[500px] rounded-2xl" />
+              <Skeleton className="h-[500px] rounded-2xl" />
             </div>
           </div>
         </div>
@@ -974,7 +974,7 @@ export function SettingsPage() {
               PLAYER HEADER CARD
           ============================================= */}
 
-          <div className="feed-item relative overflow-hidden rounded-[2rem] shadow-xl shadow-brand/10">
+          <div className="feed-item relative overflow-hidden rounded-2xl shadow-xl shadow-brand/10">
             <div className="absolute inset-0 bg-gradient-to-br from-[#172b67] via-[#253c91] to-[#4b267d]" />
             <div className="absolute -left-16 -top-24 h-64 w-64 rounded-full bg-purple-500/30 blur-3xl" />
             <div className="absolute -right-16 top-0 h-64 w-64 rounded-full bg-blue-400/30 blur-3xl" />
@@ -995,7 +995,7 @@ export function SettingsPage() {
                   <h1 className="truncate text-2xl font-black tracking-tight text-white sm:text-3xl">
                     {user?.displayName ?? "Settings"}
                   </h1>
-                  <Badge className="gap-1 rounded-full border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+                  <Badge className="gap-1 rounded-full border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
                     <Sparkles className="h-3 w-3" aria-hidden />
                     LVL · Member
                   </Badge>
@@ -1073,9 +1073,9 @@ export function SettingsPage() {
 
             {/* Desktop rail */}
             <aside className="hidden min-h-0 lg:block">
-              <div className="feed-item flex flex-col gap-1 rounded-[1.75rem] border border-line bg-surface/80 p-2.5 shadow-sm backdrop-blur">
+              <div className="feed-item flex flex-col gap-1 rounded-2xl border border-line bg-surface/80 p-2.5 shadow-sm backdrop-blur">
                 <div className="flex items-center gap-2.5 px-3 pb-2 pt-2">
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand to-[#5B3FF5] text-on-brand shadow-md shadow-brand/25">
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-on-brand shadow-md shadow-brand/25">
                     <Settings2 className="h-4 w-4" aria-hidden />
                   </div>
                   <div>
@@ -1103,7 +1103,7 @@ export function SettingsPage() {
                         className={[
                           "group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand",
                           selected
-                            ? "bg-gradient-to-r from-brand to-[#5B3FF5] text-white shadow-lg shadow-brand/25"
+                            ? "bg-brand text-white shadow-lg shadow-brand/25"
                             : "text-ink-subtle hover:bg-surface-muted/70 hover:text-ink",
                         ].join(" ")}
                       >
@@ -1146,7 +1146,7 @@ export function SettingsPage() {
                     <p className="truncate text-xs font-extrabold text-ink">
                       {user?.displayName ?? "User"}
                     </p>
-                    <p className="truncate text-[10px] text-ink-subtle">
+                    <p className="truncate text-[11px] text-ink-subtle">
                       <HirotoliId
                         publicUserId={user?.publicUserId}
                         username={user?.username}
@@ -1170,7 +1170,7 @@ export function SettingsPage() {
                       icon={Palette}
                     />
 
-                    <Card className="overflow-hidden rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+                    <Card className="overflow-hidden rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
                       <CardHeader className="border-b border-line/70 px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
@@ -1216,7 +1216,7 @@ export function SettingsPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+                    <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
                       <CardHeader className="px-5 pb-2 pt-5">
                         <div className="flex items-center gap-3">
                           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-surface-muted text-ink-subtle">
@@ -1260,13 +1260,13 @@ export function SettingsPage() {
                       icon={ShieldCheck}
                     />
 
-                    <div className="relative overflow-hidden rounded-[1.75rem] border border-line bg-surface/80 p-5 shadow-sm backdrop-blur">
+                    <div className="relative overflow-hidden rounded-2xl border border-line bg-surface/80 p-5 shadow-sm backdrop-blur">
                       <div
                         aria-hidden
                         className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand/10 blur-3xl"
                       />
                       <div className="relative flex flex-wrap items-center gap-4">
-                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand to-[#5B3FF5] text-white shadow-lg shadow-brand/25">
+                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/25">
                           {visibleCount >= 8 ? (
                             <Eye className="h-6 w-6" aria-hidden />
                           ) : (
@@ -1286,7 +1286,7 @@ export function SettingsPage() {
                             className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-muted"
                           >
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-brand to-[#5B3FF5] transition-all duration-500"
+                              className="h-full rounded-full bg-brand transition-all duration-500"
                               style={{
                                 width: `${(visibleCount / VISIBILITY_KEYS.length) * 100}%`,
                               }}
@@ -1342,7 +1342,7 @@ export function SettingsPage() {
                       icon={CircleUserRound}
                     />
 
-                    <Card className="rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+                    <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
                       <CardHeader className="px-5 pb-3 pt-5">
                         <div className="flex items-center gap-3">
                           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
@@ -1377,7 +1377,7 @@ export function SettingsPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+                    <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
                       <CardHeader className="px-5 pb-3 pt-5">
                         <div className="flex items-center gap-3">
                           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-surface-muted text-ink-subtle">
@@ -1416,7 +1416,7 @@ export function SettingsPage() {
                         >
                           <Badge
                             variant="secondary"
-                            className="gap-1 rounded-full text-[10px]"
+                            className="gap-1 rounded-full text-[11px]"
                           >
                             <Check className="h-3 w-3" />
                             Protected
@@ -1427,7 +1427,7 @@ export function SettingsPage() {
 
                     <BlockedUsersSection />
 
-                    <Card className="rounded-[1.75rem] border-line bg-surface/80 shadow-sm backdrop-blur">
+                    <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
                       <CardContent className="p-3">
                         <SettingsRow
                           icon={Bell}
@@ -1436,7 +1436,7 @@ export function SettingsPage() {
                         >
                           <Badge
                             variant="outline"
-                            className="rounded-full text-[10px]"
+                            className="rounded-full text-[11px]"
                           >
                             Coming soon
                           </Badge>
@@ -1448,7 +1448,7 @@ export function SettingsPage() {
                         >
                           <Badge
                             variant="outline"
-                            className="rounded-full text-[10px]"
+                            className="rounded-full text-[11px]"
                           >
                             Coming soon
                           </Badge>
@@ -1456,7 +1456,7 @@ export function SettingsPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="overflow-hidden rounded-[1.75rem] border-danger/40 bg-gradient-to-br from-danger-soft/60 to-transparent shadow-sm backdrop-blur">
+                    <Card className="overflow-hidden rounded-2xl border-danger/40 bg-gradient-to-br from-danger-soft/60 to-transparent shadow-sm backdrop-blur">
                       <CardContent className="p-3">
                         <SettingsRow
                           icon={LogOut}

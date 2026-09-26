@@ -58,12 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="hidden h-9 w-9 shrink-0 object-contain dark:block"
           />
 
-          <span
-            className="
-              bg-linear-to-r from-[#2F9BFF] via-[#5B3FF5] to-[#D94FE8]
-              bg-clip-text text-lg font-extrabold tracking-tight text-transparent
-            "
-          >
+          <span className="text-lg font-extrabold tracking-tight text-ink">
             HiRotoli
           </span>
         </div>
@@ -118,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="min-h-dvh pb-16 lg:h-full lg:overflow-hidden lg:pb-0 lg:pl-64">{children}</main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-7 border-t border-line bg-surface/90 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-7 border-t border-line bg-surface/90 pb-safe backdrop-blur lg:hidden"
         aria-label="Main navigation"
       >
         {navItems.map((item) => {
@@ -133,7 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               to={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-ink-subtle",
+                "flex min-h-[44px] flex-col items-center justify-center gap-1 text-[11px] font-medium text-ink-subtle",
                 active && "text-brand-ink",
               )}
             >
@@ -153,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
-        <div className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-ink-subtle">
+        <div className="flex min-h-[44px] flex-col items-center justify-center gap-1 text-[11px] font-medium text-ink-subtle">
           <span className="grid h-8 w-12 place-items-center rounded-full">
             <ThemeToggle />
           </span>

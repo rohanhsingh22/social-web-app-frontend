@@ -22,10 +22,10 @@ function TrendingCard({ thoughts, activeTag, onSelectTag }: SidebarProps) {
   return (
     <section
       aria-label="Trending topics"
-      className="feed-item overflow-hidden rounded-[1.75rem] border border-line bg-surface/80 shadow-sm backdrop-blur"
+      className="overflow-hidden rounded-2xl border border-line bg-surface"
     >
       <h2 className="flex items-center gap-2 px-5 pb-1 pt-5 text-xl font-extrabold text-ink">
-        <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-brand to-[#D94FE8] text-on-brand">
+        <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand text-on-brand">
           <Flame className="h-4 w-4" aria-hidden />
         </span>
         Trending
@@ -104,7 +104,7 @@ function TopAuthorsCard({ thoughts }: { thoughts: Thought[] }) {
   return (
     <section
       aria-label="Top authors"
-      className="feed-item overflow-hidden rounded-[1.75rem] border border-line bg-surface/80 shadow-sm backdrop-blur"
+      className="overflow-hidden rounded-2xl border border-line bg-surface"
       style={{ animationDelay: "80ms" }}
     >
       <h2 className="px-5 pb-1 pt-5 text-xl font-extrabold text-ink">
@@ -183,7 +183,7 @@ function ActivityCard() {
   return (
     <section
       aria-label="Your activity"
-      className="feed-item overflow-hidden rounded-[1.75rem] border border-line bg-surface/80 shadow-sm backdrop-blur"
+      className="overflow-hidden rounded-2xl border border-line bg-surface"
       style={{ animationDelay: "140ms" }}
     >
       <h2 className="px-5 pb-1 pt-5 text-xl font-extrabold text-ink">

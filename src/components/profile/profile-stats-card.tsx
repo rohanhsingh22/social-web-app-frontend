@@ -22,21 +22,21 @@ export function ProfileStatsCard({
   return (
     <div
       className={cn(
-        "showcase-stat flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10",
+        "showcase-stat flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 transition-colors duration-150 hover:bg-surface-hover",
         className,
       )}
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand/20 text-brand">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-ink">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-white/50">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-ink-subtle">
           {label}
         </p>
         <p
           className={cn(
             "truncate text-sm font-semibold",
-            isSet ? "text-white" : "text-white/40",
+            isSet ? "text-ink" : "text-ink-subtle",
           )}
         >
           {display}

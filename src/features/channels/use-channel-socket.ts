@@ -133,6 +133,27 @@ export function useChannelSocket(
         handlersRef.current.onError?.(payload);
       });
 
+      // Server-side eviction (e.g. Toli change): drop the dead room,
+      // leave back so the server clears its tracking, and surface the
+      // fresh membership error instead of ghosting.
+      socket.on(
+        "channel:kicked",
+        (payload: { channelId?: string; code?: string }) => {
+          if (payload?.channelId) {
+            if (joinedChannelRef.current === payload.channelId) {
+              joinedChannelRef.current = undefined;
+            }
+            socket!.emit("channel:leave", { channelId: payload.channelId });
+          }
+          const error = {
+            code: payload?.code ?? "TOLI_FORBIDDEN",
+            message: "You no longer have access to this room.",
+          } as ChannelErrorPayload;
+          setChannelMeta((current) => ({ ...current, error }));
+          handlersRef.current.onError?.(error);
+        },
+      );
+
       socket.on("auth:error", async (payload: { code: string; message?: string }) => {
         setChannelMeta((current) => ({
           ...current,

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 function FeatureItem({ icon: Icon, text }: { icon: typeof MessageCircle; text: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/10 backdrop-blur-sm">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand-ink">
         <Icon className="h-5 w-5" aria-hidden />
       </div>
       <span className="text-sm font-medium">{text}</span>
@@ -19,27 +19,27 @@ function FeatureItem({ icon: Icon, text }: { icon: typeof MessageCircle; text: s
 
 function BrandPanel() {
   return (
-    <div className="absolute inset-0 flex flex-col justify-center overflow-hidden bg-gradient-to-br from-brand via-brand-hover to-purple-600 p-12 text-on-brand">
+    <div className="absolute inset-0 flex flex-col justify-center overflow-hidden bg-surface-muted p-12 text-ink">
       {/* Decorative circles */}
-      <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-12 top-1/3 h-24 w-24 rounded-full bg-white/5 blur-2xl" />
+      <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand-soft blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-brand-soft blur-3xl" />
+      <div className="pointer-events-none absolute right-12 top-1/3 h-24 w-24 rounded-full bg-brand-soft blur-2xl" />
 
       <div className="relative z-10">
         <div className="mb-8 flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/20 shadow-lg backdrop-blur-sm">
+          <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand text-on-brand shadow-lg">
             <MessageCircle className="h-6 w-6" aria-hidden />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">HiiToli</h1>
+          <h1 className="text-2xl font-bold tracking-tight">HiRotoli</h1>
         </div>
 
         <h2 className="mb-4 text-4xl font-bold leading-tight">
-          Connect.<br />
-          Chat.<br />
-          Belong.
+          Find your people.
+          <br />
+          Start with a conversation.
         </h2>
 
-        <p className="mb-10 max-w-sm text-base leading-relaxed opacity-90">
+        <p className="mb-10 max-w-sm text-base leading-relaxed text-ink-muted">
           Join live public channels, build connections, and enjoy private conversations with people around the world.
         </p>
 
@@ -122,8 +122,8 @@ export function LoginPanel() {
       </div>
 
       {/* Login form overlay */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 backdrop-blur-sm lg:justify-end lg:bg-transparent lg:backdrop-blur-none">
-        <div className="mx-4 w-full max-w-md rounded-2xl border border-line bg-surface/95 p-8 shadow-2xl backdrop-blur-md lg:mr-16 lg:p-10">
+      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 lg:justify-end lg:bg-transparent">
+        <div className="mx-4 w-full max-w-md rounded-3xl border border-line bg-surface p-8 shadow-2xl lg:mr-16 lg:p-10">
           <LoginForm />
         </div>
       </div>

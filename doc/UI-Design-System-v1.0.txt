@@ -1,0 +1,349 @@
+# HiRotoli — Unified UI Design System & Complete Product Interface Specification
+
+**Version:** 1.0 · **Status:** Proposed design standard for implementation · **Scope:** Launch 1 web app · **Basis:** latest uploaded frontend ZIP (`social-web-app-frontend-main (1).zip`) and previously agreed HiRotoli product scope.
+
+> **For every design or coding agent:** Read this entire document before modifying a screen. This document is the proposed single source of truth for UI decisions. Preserve the current feature behavior and API contracts. The sections marked **Existing** describe code inspected in the uploaded frontend; **Standard** defines the design we are adopting. Do not mistake a proposed specification for an already-implemented feature.
+
+## 1. Product identity and design objective
+
+HiRotoli is a social space where strangers can enter public rooms, talk first, connect later, join one of five Tolies, share text-only Thoughts, and message connections privately. The interface must feel welcoming, conversational, contemporary and trustworthy—not like an enterprise CRM, competitive gaming dashboard, or an X/Twitter clone. The 3D character is a distinct home experience, not the user's social profile photo.
+
+**Design principles:**
+1. **One recognizable shell.** Navigation, headers, panels and controls look and behave consistently across every route.
+2. **Conversation first.** Chat and Thoughts maximize reading space; decorative visuals never overpower content.
+3. **Person before metrics.** Names, profile photos, Toli identity and message content precede counts.
+4. **Quiet surfaces, expressive identity.** Restrained neutrals; the chosen accent highlights interaction. Toli identity is separate from the global accent.
+5. **Predictable states.** Loading, empty, error, offline, restricted, pending and success states have standard patterns.
+6. **Mobile is a full experience.** No desktop-only essential action; drawers and panels adapt rather than disappear.
+7. **Accessible by default.** Keyboard support, readable contrast, visible focus, reduced motion and screen-reader announcements.
+
+### 1.1 What already exists in the uploaded frontend
+
+The inspected code contains `AppShell`, responsive desktop left navigation/mobile bottom navigation, theme and accent preferences, reusable UI primitives, the 3D Home, Thoughts (For You/Fresh/Connections/Me), channels, DMs, connections, notifications, onboarding, profile and settings. The current CSS already defines light/dark semantic variables and five selectable accents. **This document unifies and extends those existing patterns; it does not require a rewrite.**
+
+### 1.2 Scope boundaries
+
+Launch 1 includes authentication, onboarding, profile and picture choice, 3D Home, five predefined Tolies, public and Toli chat, connections, DMs, text-only Thoughts, four notification types, safety/moderation, settings and responsive navigation. **Do not add** Thought media uploads, Toli leaderboards, competitions, Toli invitations, paid tiers, elaborate badges, events or a new ML recommendation UI. Suggestions below are visual presentations of existing features, not permission to invent new backend capabilities.
+
+## 2. Visual direction
+
+**Creative direction:** “A lively social lounge with editorial clarity.” Clean, comfortable reading surfaces; soft rounded corners; gentle borders; purposeful color; concise language. Avoid full-screen neon gradients, dense glassmorphism, heavy drop shadows, inconsistent illustrated mascots, oversized dashboard widgets and excessive animation.
+
+**Brand mark:** Reuse the existing light/dark HiRotoli logos in `src/assets/app-logo/`; do not recreate the logo as text in each feature. The existing blue–violet–pink logo gradient may remain a brand-only flourish. It must not replace the selected UI accent across controls.
+
+**Theme model — Existing:** `light | dark | system`; accents `rose | violet | blue | emerald | amber`; current default `system + rose`. Preserve these values and user preferences. Use `data-accent` and `.dark` as already implemented. No feature should hardcode its own primary purple/pink in place of semantic tokens.
+
+## 3. Design tokens — implementation contract
+
+### 3.1 Color: semantic tokens
+
+Reuse `src/index.css` variables and Tailwind mappings instead of introducing page-local colors. The following are the existing light/dark foundations from the uploaded frontend:
+
+| Token | Light | Dark | Usage |
+|---|---|---|---|
+| `--background` | `#f6f7fb` | `#0e1018` | Page canvas |
+| `--surface` | `#ffffff` | `#161927` | Sidebar, cards, modal |
+| `--surface-muted` | `#f1f3f9` | `#1f2334` | Inputs, nested panels |
+| `--surface-hover` | `#e9edf5` | `#272c40` | Hover/selection |
+| `--ink` | `#1a1c2e` | `#f3f4fb` | Primary text |
+| `--ink-muted` | `#4b5063` | `#9aa1b8` | Supporting text |
+| `--ink-subtle` | `#7a8091` | `#6b7187` | Metadata; check contrast |
+| `--line` | `#e4e7f0` | `#272c40` | Borders/dividers |
+| `--line-strong` | `#cdd3e0` | `#343a52` | Active input borders |
+
+**Standard:** All feature layouts use `bg-background`, `bg-surface`, `text-ink`, `text-ink-muted`, `border-line`, `bg-brand-soft`, `text-brand-ink`, `bg-brand`. Do not hardcode Tailwind gray, zinc, slate or purple colors for ordinary surfaces. Reserve `--danger`, `--warning`, `--success` for genuine status meaning. Ensure text on every selected accent passes WCAG AA; use the existing `--on-brand` only after contrast verification in both themes.
+
+**Accent palette — Existing:** rose `#ff2e63`, violet `#7c3aed`, blue `#2563eb`, emerald `#10b981`, amber `#f59e0` in light mode; dark mode has theme-adjusted values. A user's chosen accent affects buttons, active navigation, focus rings, selected tabs, links and toggles. **Toli colors are identity markers, not replacements for the app accent.**
+
+### 3.2 Toli visual identities — proposed palette
+
+The names are fixed: **Vector, Wave, Quantum, Orbit, Flux**. The following colors are **proposed design choices**, not claims about existing assets; check current avatar artwork before locking them:
+
+| Toli | Proposed identity | Treatment |
+|---|---|---|
+| Vector | Electric blue | Blue badge, geometric directional motif |
+| Wave | Cyan / teal | Soft flowing-line motif |
+| Quantum | Violet | Small particle / constellation motif |
+| Orbit | Amber | Orbital-ring motif |
+| Flux | Coral / rose | Energetic angular motif |
+
+Use color **plus** name/icon so identity is never color-only. The badge shape, padding and type style must be identical for all five. Use the existing 25 static Toli avatars (five per Toli); do not substitute the 3D character for an avatar.
+
+### 3.3 Typography
+
+**Standard:** Use one UI sans-serif family consistently. Prefer the current project's font if already configured; otherwise use `Inter, ui-sans-serif, system-ui, sans-serif` with proper font loading. Avoid introducing a separate font per feature. Suggested scale:
+
+| Role | Desktop / mobile | Weight | Line height |
+|---|---|---|---|
+| Display / marketing only | 40 / 32 px | 750 | 1.12 |
+| Page heading | 28 / 24 px | 700 | 1.2 |
+| Section heading | 20 / 18 px | 650 | 1.3 |
+| Card heading / person name | 16 / 16 px | 650 | 1.35 |
+| Body / Thoughts / chat | 15–16 px | 400 | 1.55 |
+| Supporting text | 14 px | 400 | 1.45 |
+| Metadata | 12–13 px | 450 | 1.35 |
+| Eyebrow | 11–12 px | 700 | 1.3; limited uppercase |
+
+Avoid `text-[10px]` for important mobile labels and avoid long all-caps paragraphs. Thoughts body should be highly legible, not compressed into a tiny feed.
+
+### 3.4 Spacing, dimensions and surfaces
+
+**Standard spacing scale:** 4, 8, 12, 16, 20, 24, 32, 40, 48, 64 px. Use these increments rather than arbitrary per-page margins. Global content gutter: 24–32 px desktop, 16 px tablet/mobile. Standard card padding: 20–24 px desktop, 16 px mobile. Card gap: 12–16 px. Section gap: 24–32 px.
+
+**Radii:** 8 px small controls, 12 px inputs/buttons, 16 px standard cards, 20–24 px feature panels/dialogs, fully rounded pills/avatars. Current root radius is `0.75rem`; extend consistently rather than overriding everything.
+
+**Borders:** 1 px `--line` for cards and structural dividers; stronger border for focused controls. Shadows: subtle only on overlays and floating menus; prefer borders to card shadows. Interactive minimum hit target: 44×44 CSS px for touch. Standard input/button height: 44 px; compact control 36 px only when paired with accessible hit area.
+
+### 3.5 Motion
+
+Use 120–180 ms hover/focus transitions, 180–240 ms drawers/dialogs, 200–300 ms optional feed entry animation. No animation on every feed item during infinite scrolling. Skeleton shimmer may be subtle. Respect `prefers-reduced-motion: reduce` and remove nonessential transforms/animated gradients.
+
+## 4. Global information architecture and app shell
+
+**Existing primary routes/navigation:** Home, Messages, Thoughts, Connections, Notifications, Settings; channel links are nested in the sidebar. Profile is reachable from identity surfaces and the user menu. Keep route names consistent with the current router.
+
+### 4.1 Desktop shell (≥1024 px)
+
+- Left rail: existing **256 px** fixed sidebar (`w-64`). Top: logo and wordmark; middle: six primary nav items; lower: Channels section with public rooms and optional My Toli; bottom: current user menu.
+- Active nav: subtle `brand-soft` background, `brand-ink` icon/text, semibold label. Inactive: neutral icon/text, soft hover.
+- Main viewport: route-owned content area to the right of sidebar. Page header position, horizontal gutters and scroll behavior should be uniform.
+- Right contextual rail: **optional**, used on Thoughts and possibly Connections; 288–320 px. Never display a mostly empty right rail just for symmetry.
+- Full-height chat and DMs: independent scroll regions with sticky conversation header and composer. No double page scrollbar.
+
+### 4.2 Tablet (768–1023 px)
+
+Use either a compact 72 px icon rail or the mobile bottom navigation consistently; **recommended:** switch to mobile bottom nav below 1024 px to align with current implementation. Contextual right rail becomes a drawer or collapsible section. Keep chat usable at 768 px without forcing a three-column view.
+
+### 4.3 Mobile (<768 px)
+
+- Preserve existing bottom nav pattern; six primary destinations are already present, but **six nav items plus a theme toggle is crowded**. **Standard:** five visible destinations (Home, Chats, Thoughts, Connections, Alerts); move Settings and theme to the profile/menu sheet. This is a proposed adjustment requiring explicit product approval before implementation.
+- Fixed bottom bar 64–72 px plus `env(safe-area-inset-bottom)`; icon 20–24 px; label at least 11–12 px.
+- Top bar 56–64 px with page title and at most two high-priority actions. Back arrow for nested detail screens.
+- Do not cover message composer or last feed item with bottom nav. Apply bottom safe-area padding.
+- Modal dialogs become bottom sheets when appropriate; full-screen composer only on narrow phones.
+
+### 4.4 Page-header contract
+
+Every non-chat page uses a standard header: optional eyebrow, title, optional 1-line subtitle, trailing primary action, optional tabs below. Header should not randomly change from centered to left-aligned between pages. Desktop title 28 px; mobile 24 px. Keep breadcrumbs only where the hierarchy warrants them (e.g., profile settings), not on every screen.
+
+## 5. Reusable component library — mandatory
+
+Reuse and consolidate `src/components/ui/{button,card,input,textarea,tabs,dialog,sheet,dropdown-menu,avatar,badge,skeleton,switch,select,tooltip}`. Prefer extending existing primitives rather than creating `ThoughtButton`, `DmButton`, `ProfileButton` with separate styles.
+
+| Component | Standard variants / behavior |
+|---|---|
+| Button | primary, secondary, outline, ghost, destructive; sm/md/lg; disabled/loading/focus |
+| Icon button | 40–44 px hit target, accessible label, tooltip on desktop |
+| Card | standard, interactive, muted; 16 px radius; optional header/footer |
+| Tabs | 44–48 px high; selected underline or pill **one style per context**; keyboard navigation |
+| Input / textarea | persistent label, hint, inline error, clear focus ring, no placeholder-only labeling |
+| Avatar | 32/40/48/64/96 px presets; initials fallback; consistent profile-picture resolution |
+| Toli badge | same geometry for all five; text + color + optional icon |
+| Status badge | neutral/success/warning/danger; never confuse with Toli identity |
+| Dropdown | menu items 40+ px; destructive action separated; keyboard escape |
+| Dialog / sheet | title, description, close, predictable action order; trap focus |
+| Toast | success/info/error; concise text; don't use toast as only error channel |
+| Empty state | icon/illustration, title, helpful sentence, optional action |
+| Skeleton | mirrors actual layout; avoids large shifts when content loads |
+| Confirm dialog | required for destructive actions; clear affected item |
+
+**Canonical ownership:** Shared UI primitives live in `components/ui`, global app structure in `components/layout`, cross-feature identity in `components/common`, Toli-specific visuals in `components/toli`, feature composition in `features/<feature>`. Do not duplicate tokens or copy-paste components across pages.
+
+## 6. Screen-by-screen design specifications
+
+### 6.1 Login and authentication
+
+**Existing:** OAuth login with provider buttons; callback and loading routes.
+
+**Standard layout:** centered 440–480 px auth panel on a quiet neutral background, brand mark at top, short welcome headline, one-line product value proposition, provider buttons in a consistent full-width stack, trust/privacy microcopy beneath. On wide desktop, optional restrained illustration/abstract community motif outside the form; on mobile, one column. No decorative visual should push the login action below the fold. Clear loading, cancelled-login and failed-provider states; preserve redirect destination where supported.
+
+**Copy direction:** warm and direct: “Find your people. Start with a conversation.” Avoid promising anonymity, encryption or safety guarantees not implemented.
+
+### 6.2 Onboarding
+
+**Existing fields:** username, display name, date of birth, region, primary language; optional Toli and provider/Toli profile picture. Display-name availability is checked with debounce.
+
+**Standard:** present as a focused step flow rather than a long intimidating form: (1) Your identity, (2) Choose your Toli or skip, (3) Choose your profile picture, (4) Review/enter. Use progress indicator and Back/Continue; preserve entered values. Show display-name availability adjacent to the field, not in a toast. Show username and display name as distinct concepts. Explain that the Toli choice is optional and can be changed according to current backend rules. Toli choice cards use one uniform design with color motif and name; selected state uses border + check + semantic text. Avatar picker displays the provider picture alongside five valid avatars for the selected Toli. If skipped, never present an inaccessible Toli avatar as selectable. Mobile: single-column full-width cards.
+
+**Implementation caution:** Existing onboarding currently submits profile, Toli and picture in sequence. If converting to steps, preserve partial-failure recovery and avoid losing previously saved fields.
+
+### 6.3 Home and 3D character
+
+**Existing:** full-height interactive `CharacterScene`, small My Toli overlay and Toli-room entry.
+
+**Standard:** keep the 3D character as the hero, not a miniature dashboard widget. On desktop, character stage occupies the central visual area; top-left compact identity/Toli panel, top-right minimal character controls if already supported; lower contextual prompt to enter a room. On mobile, stage resizes to available viewport and controls stay outside bottom-nav overlap. If WebGL fails or device performance is poor, show a static fallback and working navigation. Never use the character model as the user's avatar on Thoughts, chat, profile or DMs.
+
+### 6.4 Thoughts — principal editorial feed
+
+**Existing:** For You, Fresh, Connections, Me; composer; cards; right sidebar; local top sort and hashtag filter; infinite scroll and pull-to-refresh.
+
+**Desktop standard:** optional 288–320 px right contextual rail; central feed max-width **680–720 px**; avoid extremely wide reading lines. Header “Thoughts” and compact create action. Tabs immediately beneath header; sticky only if scroll container behavior is reliable. Composer at top of feed: 48 px avatar, “What's on your mind?” prompt, expanding textarea, character counter if backend enforces a limit, optional topic/tag guidance only if supported, right-aligned Post button. A separate floating Post action is acceptable on mobile but must not duplicate a full-size always-visible composer unnecessarily.
+
+**Thought card anatomy:** avatar (44–48 px), display name, handle/HiRotoli ID where applicable, Toli badge, relative timestamp, overflow menu; body 15–16 px at 1.5–1.6 line-height; hashtags as inline links; bottom engagement row in consistent order: like, comment, share, optional counts. Whole card should not accidentally trigger navigation when a user clicks an action. No media block in Launch 1. Use profile picture, never 3D character. Owner menu: edit/delete; other-user menu: hide/report. Destructive actions require confirmation where appropriate.
+
+**Tab semantics:** For You = ranked recommendations; Fresh = chronological; Connections = connected authors; Me = own posts. Top sorting and hashtag filtering must clearly state if they only affect loaded items; do not imply database-wide sorting unless API supports it. Keep tab selection stable when opening and closing a Thought thread; preserve scroll when navigating back if practical.
+
+**Thread:** central column with back control, parent Thought, comment composer, comments ordered according to existing API semantics, reply loading and empty states. Do not invent nested threaded replies if unsupported. Show a non-revealing unavailable state for deleted/restricted Thoughts.
+
+**Sidebar:** concise sections such as relevant topics and “Start a conversation” / channel entry **only when data is real**. Do not fake trends or engagement counts. On mobile, hide sidebar and surface important discovery links elsewhere.
+
+**Feed states:** initial skeleton 3 cards; incremental pagination skeleton at bottom; empty per-tab messages; error retry without wiping already visible cards; refresh indicator that does not jump scroll unexpectedly. New content can show a “New Thoughts” banner rather than inserting content while the user is reading. Ensure stable cursor behavior before visually promising seamless infinite scroll.
+
+### 6.5 Public channels and Toli rooms
+
+**Existing:** channel list in sidebar, chat shell, Socket.IO messages; optional My Toli channel.
+
+**Standard desktop:** room header 64–72 px with name, description or member/presence information only if available, safety/report menu. Main transcript fills height; composer fixed at bottom of chat column, 16 px padding. Message groups use consistent avatar, display name, Toli badge where relevant, timestamp and body. Group consecutive messages by same sender within a short interval visually; preserve individual message identity for moderation. Your own messages may have a subtle brand-tinted surface, but don't make public chat look like a private SMS thread if it reduces participant clarity. System notices and removed-message states have distinct restrained styles.
+
+**Mobile:** room list is a separate screen/sheet; opening a room shows a back arrow, transcript and bottom composer. Avoid a permanently visible desktop room sidebar squeezing messages. Auto-scroll only when the user is already near the bottom; otherwise show a “New messages” jump button. Connection status banner appears when disconnected/reconnecting. Preserve unsent draft during transient reconnects where feasible. Toli rooms use the same chat UI with a Toli identity strip and membership-based access; no separate visual design system.
+
+### 6.6 Messages / personal DMs
+
+**Existing:** 320 px conversation list and message thread on desktop.
+
+**Standard desktop:** two-pane layout: 320 px conversation list + flexible thread. Conversation row: 44 px avatar, display name, one-line last-message preview, timestamp, unread badge when available. Selected row uses `brand-soft`, not an unrelated gradient. Search only if current backend/client supports it; otherwise defer rather than displaying a fake search bar. Thread header shows recipient avatar/name and profile access. Incoming and outgoing bubbles use distinct semantic surfaces, max-width 70–75% desktop / 85% mobile. Group messages, display date separators and readable timestamps. Keep sender identity visually clear in group conversations only if such conversations exist; do not invent group DMs.
+
+**Mobile:** conversation list occupies full width; opening a DM navigates to a full-width thread. Back button returns to list with preserved scroll. Keyboard opening must not hide composer; account for safe area and visual viewport. For blocked, disconnected or unavailable contacts, show accurate messaging restriction states. Never expose private content in public previews or logs.
+
+### 6.7 Connections
+
+**Existing:** connected users, received/sent requests and user search.
+
+**Standard:** page header and three tabs: Connections, Requests, Find people (adjust exact labels to current feature structure). Search field at top of Find people; debounce and clear button. User card: 48 px avatar, display name, optional handle, Toli badge, compact supporting info, one clear action. Requests group Received and Sent with status chips. Accept/decline/cancel/remove actions must have distinct hierarchy; destructive removal gets confirmation. No empty grid of oversized cards on desktop: use a comfortable responsive two-column grid when space allows, single column mobile. If privacy hides fields, don't show placeholder values that imply missing data.
+
+### 6.8 Notifications
+
+**Existing launch types:** connection request, accepted connection, new DM, legal notice. Do not add Thought likes or Toli activity as notification types without a product change.
+
+**Standard:** header with unread count and Mark all as read; segmented All/Unread filter only if supported or implemented without misleading state. Each row: type icon or actor avatar, concise message, relative timestamp, subtle unread indicator and contextual destination. Rows are 72–96 px, not giant cards. Batch operations have pending/disabled states; don't optimistically claim a legal notice was read before API confirmation. Notification bell should display unread count without needing to render the full list if a dedicated endpoint is introduced.
+
+### 6.9 Profile — own and other users
+
+**Standard:** compact banner or gradient-tinted header using semantic tokens, large 96 px profile picture, display name, handle/HiRotoli ID, Toli badge, bio, location/language/interests only if visibility permits. Primary action on other-user profile depends on actual relationship state: Connect, Requested, Accept, Message, or restricted. On own profile: Edit profile and profile-picture control. Stats use a consistent compact row; do not inflate follower counts or invent unsupported social metrics. User Thoughts appear in a reusable list using the same `ThoughtCard` component. A profile picture is provider or valid Toli avatar; 3D character appears only in a separate optional character view if already supported.
+
+### 6.10 Toli selection and identity
+
+**Standard:** the five predefined Tolies are displayed as five equally weighted selection cards. Each shows identity motif, name, one short neutral description approved by product, avatar preview and selection state. A user belongs to at most one Toli. Skip is a visible neutral option. My Toli surfaces show badge, chosen avatar and entry to the authorized Toli chat room. Switching Toli requires explaining the effect on room access and validating the current avatar. Avoid ranks, levels, leaderboards, quests or competition metaphors.
+
+### 6.11 Settings
+
+**Existing sections:** Display, My Toli, Privacy, Account; appearance preferences and profile visibility controls.
+
+**Standard desktop:** 240 px settings section rail + content panel max-width 680 px. Mobile: section list first, section detail second, with back navigation. Each section uses same title/subtitle, grouped cards, field labels and dividers. Display offers Light/Dark/System and five accent swatches with selected check; preview changes immediately and persist according to existing behavior. Privacy switches clearly explain audience/visibility and reflect backend values. My Toli reuses the onboarding Toli and avatar pickers, not duplicated variants. Account includes actual supported session/logout controls and profile entry. Use explicit Save when a group is not autosaved; never mix save semantics without indication. Show success and recoverable failure states.
+
+### 6.12 Safety and moderation
+
+Report action opens a standardized dialog/sheet with reason selection, optional explanation if supported, clear privacy and submission feedback. Block/unblock actions show consequences in concise language. Banned, muted, removed and unavailable content use consistent states without leaking sensitive moderation details. Never make report buttons decorative or imply that a report guarantees immediate action. Admin/moderation UI, if exposed in this release, should reuse tokens but may use denser data tables with a separate authenticated layout.
+
+### 6.13 Not found, offline and error surfaces
+
+404: simple brand-aligned illustration/icon, “Page not found,” Return home. 403/restricted: neutral explanation, safe destination. Network offline: persistent small banner on chat and actionable Retry elsewhere. 500: retry and support guidance without raw stack traces. Expired session: non-destructive sign-in flow; preserve unsent local drafts when feasible. Global error boundary must not replace the entire app shell with a blank screen.
+
+## 7. Universal interaction-state matrix
+
+Every data-backed screen must implement the following states consistently:
+
+| State | Required behavior |
+|---|---|
+| First load | Layout-matched skeleton; no giant global spinner for a single panel |
+| Background refresh | Keep existing content visible; small inline progress indicator |
+| Empty | Explain why empty and show one relevant next action |
+| Error | Human-readable message + Retry; preserve valid cached content |
+| Offline/reconnecting | Visible status; avoid duplicate sends and lost drafts |
+| Pending mutation | Disable repeated action; show spinner/label; prevent double submit |
+| Success | Update visible state; toast only when confirmation adds value |
+| Unauthorized | Appropriate sign-in/locked state; never show private stale content |
+| Restricted/deleted | Safe unavailable state; no leaked author or content details |
+| Long content | Wrapping, truncation only where appropriate; accessible expand action |
+
+Use `aria-live="polite"` for non-urgent async updates and `role="alert"` for actionable errors. Never rely only on a toast for validation failures.
+
+## 8. Accessibility and content standards
+
+- WCAG 2.2 AA target for contrast, focus, keyboard navigation and touch targets. Check each accent in both themes.
+- Semantic headings: one H1 per page; headings follow hierarchy. Buttons are buttons, navigation is links.
+- Every icon-only control has an accessible name. Menus/dialogs trap focus and return it when closed.
+- Do not rely on color alone for unread, selected, Toli identity or errors.
+- Visible focus ring with adequate contrast; never globally remove outlines without replacement.
+- `prefers-reduced-motion`; screen-reader announcements for new messages without flooding announcements.
+- Text content wraps safely, including long usernames, URLs and emoji. Use `overflow-wrap:anywhere` where necessary.
+- Timestamps use a meaningful `title`/accessible full date where possible; relative timestamps update sparingly.
+- Use short, human copy. Prefer “Couldn’t load messages. Try again.” over raw HTTP/Prisma errors.
+- Don't show unsupported controls or fabricated counts simply to fill a mockup.
+
+## 9. Responsive acceptance criteria
+
+Test at **320, 375, 390, 430, 768, 1024, 1280 and 1440 px** and at 200% zoom. No horizontal overflow. Primary controls reachable on 320 px. Bottom nav and keyboard do not cover chat input. Long Thoughts and names wrap without breaking card layout. Sidebars collapse predictably. Dialogs fit small viewports and scroll internally when necessary. Light/dark/system and all five accents must work on every route. Verify hover, touch and keyboard behavior separately.
+
+## 10. Implementation plan for agents
+
+### Phase A — Inventory and foundation
+1. Inspect current router, AppShell, `src/index.css`, `src/lib/theme.ts`, existing UI primitives and all feature pages.
+2. Create a screenshot inventory of current desktop/mobile screens in both themes. Mark existing behavior vs proposed visual changes.
+3. Centralize semantic tokens, typography, spacing and radius in existing Tailwind/CSS architecture. Preserve stored theme values.
+4. Standardize Button, Card, Tabs, Input, Dialog/Sheet, Avatar, ToliBadge, EmptyState and Skeleton.
+5. Add Storybook or an in-app component showcase **only if it materially fits the repo**; don't introduce tooling just for its own sake.
+
+### Phase B — Global shell
+6. Standardize desktop left rail, mobile navigation, page header, route container widths, safe-area handling and scroll ownership.
+7. Agree on proposed five-item mobile nav before changing existing six-item navigation; no silent product decisions.
+8. Create consistent locked, error, empty and loading patterns.
+
+### Phase C — Highest-traffic social surfaces
+9. Implement Thoughts visual system and shared ThoughtCard/Composer/Thread; preserve all existing feed semantics and API integration.
+10. Align public and Toli chat with the same header, identity, message and composer primitives.
+11. Align DM list/thread with chat visual vocabulary while preserving private-conversation distinction.
+12. Align notifications and connections.
+
+### Phase D — Identity and settings
+13. Align login, onboarding, profile, Toli picker, avatar picker, Home/3D and settings.
+14. Reuse profile/avatar/Toli components everywhere; eliminate copied local variants.
+15. Audit privacy/restriction states and moderation flows.
+
+### Phase E — Verification
+16. Run lint/typecheck/build and existing tests; fix visual changes that break behavior.
+17. Add component tests for key interactions and screenshot regression tests for representative routes.
+18. Perform keyboard-only, reduced-motion, 200% zoom, all-theme and responsive QA.
+19. Verify browser journeys: login → onboarding → Home → public chat → Thoughts → connect → DM → notification → settings → logout.
+20. Document every intentional deviation from this specification before merge.
+
+## 11. Agent guardrails and definition of done
+
+**Do:** work in small PRs, reuse existing components, use semantic tokens, retain RTK Query behavior, respect permissions, test each responsive breakpoint, compare screenshots against the approved design, and preserve feature flags/contracts.
+
+**Do not:** rebuild the whole frontend in one commit; replace functional screens with static mockups; change auth, ranking or pagination while doing visual cleanup; add fake trending data; hardcode an accent color; add new notification types; convert Tolies into gaming clans; put 3D characters into social avatars; ship only a dark-mode design; or silently change navigation without approval.
+
+**Definition of done for each screen:** matches tokens; uses standard shell/header; has mobile/tablet/desktop layouts; supports both themes and all accents; uses shared primitives; has loading/empty/error/pending/restricted states; keyboard/touch accessible; no horizontal overflow; no dead buttons; passes tests/build; screenshots reviewed at specified breakpoints; current backend integration works.
+
+## 12. Reference map for agents
+
+These paths were observed in the uploaded frontend ZIP and should be inspected before implementation:
+
+- `src/index.css` — current semantic tokens and dark/accent variants.
+- `src/lib/theme.ts` — theme modes, five accents and persistence.
+- `src/components/layout/app-shell.tsx` — desktop/mobile shell and channels.
+- `src/components/ui/` — existing shared UI primitives.
+- `src/components/common/user-avatar.tsx` and `src/components/toli/` — identity.
+- `src/features/thoughts/` — feed, card, composer, sidebar and thread.
+- `src/features/channels/` — channel list and chat shell.
+- `src/features/direct-messages/` — messages page, conversation list and DM thread.
+- `src/features/connections/connections-page.tsx` — connection UI.
+- `src/features/notifications/` — notification UI.
+- `src/features/onboarding/onboarding-page.tsx` — identity/Toli setup.
+- `src/features/profile/profile-page.tsx` — profile.
+- `src/features/settings/settings-page.tsx` — appearance, privacy, Toli and account.
+- `src/pages/home-page.tsx` and `src/components/character/` — 3D Home.
+
+## 13. Decisions requiring product sign-off
+
+1. Whether to replace the current crowded mobile nav with five primary destinations and move Settings/theme to the profile menu.
+2. Whether to adopt the proposed Toli identity colors after checking the existing avatar art.
+3. Whether onboarding should become a multi-step flow or remain a single page with clearly grouped sections.
+4. Whether to use a compact contextual rail on Thoughts at desktop widths ≥1280 px.
+5. Whether Top sort/hashtag filters remain local-to-loaded-data or become server-backed (backend/product change, not merely UI).
+
+Until approved, preserve existing behavior and implement only non-breaking visual consistency changes.
+
+---
+
+**End of specification.** This is a proposed design contract grounded in the latest inspected frontend structure, not a claim that every screen already matches it. Future agents should use it as the design baseline and update it alongside approved product changes.

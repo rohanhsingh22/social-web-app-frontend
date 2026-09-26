@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query";
 import {
   useLazyMyThoughtsQuery,
@@ -7,6 +7,10 @@ import {
   useThoughtsByUserQuery,
 } from "@/features/thoughts/api";
 import { ThoughtCard } from "@/features/thoughts/thought-card";
+import {
+  applyThoughtPatch,
+  type ThoughtCardPatch,
+} from "@/features/thoughts/thought-patch";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Thought } from "@/types/domain";
@@ -39,6 +43,10 @@ export function UserThoughts({
     setOlder([]);
   }, [resetKey]);
 
+  // Guards lazy responses that land after the viewed user changed.
+  const resetRef = useRef(resetKey);
+  resetRef.current = resetKey;
+
   const active = isOwn ? mineQuery : byUserQuery;
   const loadingMore = mineMore.isFetching || byUserMore.isFetching;
   const initial = active.data?.thoughts ?? [];
@@ -49,6 +57,18 @@ export function UserThoughts({
   ];
   const pageInfo = active.data?.pageInfo;
 
+  function patchOlder(id: string, patch: ThoughtCardPatch) {
+    if (patch.type === "delete") {
+      setOlder((current) => current.filter((thought) => thought.id !== id));
+      return;
+    }
+    setOlder((current) =>
+      current.map((thought) =>
+        thought.id === id ? applyThoughtPatch(thought, patch) : thought,
+      ),
+    );
+  }
+
   async function loadMore() {
     const cursor = active.data?.pageInfo.nextCursor;
 
@@ -56,12 +76,18 @@ export function UserThoughts({
       return;
     }
 
+    const requestKey = resetRef.current;
     const page = isOwn
       ? await loadMine({ cursor }).unwrap()
       : await loadByUser({
           publicUserId: publicUserId ?? "",
           cursor,
         }).unwrap();
+
+    // Drop responses that arrived after the viewed user changed.
+    if (resetRef.current !== requestKey) {
+      return;
+    }
 
     setOlder((current) => {
       const ids = new Set([
@@ -121,7 +147,11 @@ export function UserThoughts({
         ) : null}
 
         {items.map((thought) => (
-          <ThoughtCard key={thought.id} thought={thought} />
+          <ThoughtCard
+            key={thought.id}
+            thought={thought}
+            onPatch={patchOlder}
+          />
         ))}
 
         {pageInfo?.hasMore ? (

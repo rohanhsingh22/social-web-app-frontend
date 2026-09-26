@@ -36,6 +36,7 @@ import {
   useUpdateThoughtMutation,
 } from "@/features/thoughts/api";
 import type { Thought } from "@/types/domain";
+import type { ThoughtCardPatch } from "@/features/thoughts/thought-patch";
 
 const REPORT_REASONS = [
   "spam",
@@ -51,10 +52,14 @@ export function ThoughtCard({
   thought,
   index = 0,
   spotlight = false,
+  onPatch,
 }: {
   thought: Thought;
   index?: number;
   spotlight?: boolean;
+  // Lets list owners (feed, profile lists) patch their locally cached copy
+  // after a successful mutation. Base-query items self-heal via invalidation.
+  onPatch?: (id: string, patch: ThoughtCardPatch) => void;
 }) {
   const navigate = useNavigate();
   const authQuery = useAuthSession();
@@ -96,9 +101,15 @@ export function ThoughtCard({
     }
 
     if (thought.viewer.liked) {
-      await unlike(thought.id);
+      const result = await unlike(thought.id);
+      if (!("error" in result)) {
+        onPatch?.(thought.id, { type: "unlike" });
+      }
     } else {
-      await like(thought.id);
+      const result = await like(thought.id);
+      if (!("error" in result)) {
+        onPatch?.(thought.id, { type: "like" });
+      }
     }
   }
 
@@ -108,9 +119,28 @@ export function ThoughtCard({
     }
 
     if (thought.viewer.shared) {
-      await unshare(thought.id);
+      const result = await unshare(thought.id);
+      if (!("error" in result)) {
+        onPatch?.(thought.id, { type: "unshare" });
+      }
     } else {
-      await share(thought.id);
+      const result = await share(thought.id);
+      if (!("error" in result)) {
+        onPatch?.(thought.id, { type: "share" });
+      }
+    }
+  }
+
+  async function toggleHidden(hidden: boolean) {
+    if (busy) {
+      return;
+    }
+
+    const result = hidden
+      ? await hide(thought.id)
+      : await unhide(thought.id);
+    if (!("error" in result)) {
+      onPatch?.(thought.id, hidden ? { type: "hide" } : { type: "unhide" });
     }
   }
 
@@ -134,6 +164,7 @@ export function ThoughtCard({
     }
     await updateThought({ id: thought.id, body }).unwrap();
     setEditing(false);
+    onPatch?.(thought.id, { type: "edit", body });
   }
 
   function openEditor() {
@@ -145,6 +176,7 @@ export function ThoughtCard({
   async function confirmDelete() {
     await deleteThought(thought.id).unwrap();
     setConfirmingDelete(false);
+    onPatch?.(thought.id, { type: "delete" });
   }
 
   function openProfile() {
@@ -155,13 +187,13 @@ export function ThoughtCard({
 
   if (thought.viewer.hidden) {
     return (
-      <article className="rounded-[1.75rem] border border-line bg-surface/80 p-5 shadow-sm backdrop-blur">
+      <article className="rounded-2xl border border-line bg-surface p-5">
         <p className="text-sm text-ink-muted">
           You hid this thought.{" "}
           <button
             type="button"
             disabled={busy}
-            onClick={() => void unhide(thought.id)}
+            onClick={() => void toggleHidden(false)}
             className="font-semibold text-brand hover:underline disabled:opacity-50"
           >
             Undo
@@ -176,7 +208,7 @@ export function ThoughtCard({
       className={
         spotlight
           ? "group px-5 pb-5 pt-1"
-          : "feed-item group rounded-[1.75rem] border border-line bg-surface/80 p-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/10"
+          : "feed-item group rounded-2xl border border-line bg-surface p-5 transition-colors duration-150 hover:border-line-strong"
       }
       style={spotlight ? undefined : { animationDelay: `${Math.min(index, 8) * 60}ms` }}
     >
@@ -185,7 +217,7 @@ export function ThoughtCard({
           type="button"
           onClick={openProfile}
           aria-label={`View ${thought.author.displayName}'s profile`}
-          className="shrink-0 rounded-full bg-gradient-to-br from-brand via-[#5B3FF5] to-[#D94FE8] p-[2px] outline-none transition focus-visible:ring-2 focus-visible:ring-brand"
+          className="shrink-0 rounded-full bg-brand p-[2px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand"
         >
           <span className="block rounded-full bg-surface p-[2px]">
             <UserAvatar user={thought.author} size={42} />
@@ -220,7 +252,7 @@ export function ThoughtCard({
               size="icon"
               disabled={busy}
               aria-label="Thought actions"
-              className="h-8 w-8 shrink-0 rounded-full text-ink-subtle opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+              className="h-11 w-11 shrink-0 rounded-full text-ink-subtle opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100"
             >
               <MoreHorizontal className="h-4 w-4" aria-hidden />
             </Button>
@@ -249,7 +281,7 @@ export function ThoughtCard({
             ) : (
               <>
                 <DropdownMenuItem
-                  onSelect={() => void hide(thought.id)}
+                  onSelect={() => void toggleHidden(true)}
                   className="cursor-pointer gap-2"
                 >
                   <EyeOff className="h-4 w-4" aria-hidden />
