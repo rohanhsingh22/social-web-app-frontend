@@ -1,11 +1,13 @@
 import { Suspense, useEffect, useState } from "react";
 import {
   BadgeCheck,
+  Ban,
   Cake,
   CalendarDays,
   Clock,
   Copy,
   Check,
+  Flag,
   Globe,
   Heart,
   Languages,
@@ -31,11 +33,26 @@ import {
   useCreateConnectionRequestMutation,
   useRejectRequestMutation,
 } from "@/rtk/connections/connections-api";
+import {
+  useBlockUserMutation,
+  useBlocksQuery,
+  useUnblockUserMutation,
+} from "@/rtk/safety/safety-api";
+import {
+  ReportDialog,
+  type ReportTarget,
+} from "@/components/safety/report-dialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -47,8 +64,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { Avatar } from "@/components/character/avatar";
 import { Canvas } from "@react-three/fiber";
+import { UserThoughts } from "@/features/thoughts/user-thoughts";
 import { SenderAvatar } from "@/components/common/sender-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
+import { resolveToliAvatarImage } from "@/lib/toli-avatar";
 import { cn } from "@/lib/utils";
 
 import {
@@ -225,6 +244,7 @@ export function ProfilePage() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ProfileFormState | null>(null);
+  const [pictureOpen, setPictureOpen] = useState(false);
 
   const [savedTheme, setSavedTheme] = useState("System");
 
@@ -307,6 +327,13 @@ export function ProfilePage() {
   }
 
   const currentProfile = profile;
+  const toliPictureKey =
+    currentProfile.profilePicture?.type === "toli"
+      ? currentProfile.profilePicture.toliAvatarKey
+      : null;
+  const fullPictureSrc = toliPictureKey
+    ? resolveToliAvatarImage(toliPictureKey)
+    : currentProfile.avatarUrl;
 
   function openEditor() {
     setForm(toFormState(currentProfile));
@@ -402,12 +429,17 @@ export function ProfilePage() {
                     <div className="flex min-w-0 items-end gap-4">
                       {/* Avatar */}
                       <div className="relative shrink-0">
-                        <div className="rounded-full bg-surface p-1">
+                        <button
+                          type="button"
+                          onClick={() => setPictureOpen(true)}
+                          aria-label={`View ${currentProfile.displayName}'s profile picture`}
+                          className="cursor-pointer rounded-full bg-surface p-1 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand"
+                        >
                           <SenderAvatar
                             sender={currentProfile}
                             size={112}
                           />
-                        </div>
+                        </button>
 
                         {/* Online indicator */}
                         <span
@@ -460,7 +492,13 @@ export function ProfilePage() {
                         Edit Profile
                       </Button>
                     ) : publicUserId ? (
-                      <ConnectionAction publicUserId={publicUserId} />
+                      <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                        <ConnectionAction publicUserId={publicUserId} />
+                        <ProfileSafetyRow
+                          publicUserId={publicUserId}
+                          username={currentProfile.username}
+                        />
+                      </div>
                     ) : null}
                   </div>
 
@@ -584,6 +622,12 @@ export function ProfilePage() {
                           }
                         />
                       </div>
+
+                      {/* Thoughts of this user */}
+                      <UserThoughts
+                        publicUserId={currentProfile.publicUserId}
+                        isOwn={isOwnProfile}
+                      />
                     </div>
 
                     {/* CHARACTER — hidden on others' profiles when the owner
@@ -907,6 +951,41 @@ export function ProfilePage() {
           </div>
         </div>
       </section>
+
+      {/* ============================================================
+          PROFILE PICTURE DIALOG (picture only)
+          ============================================================ */}
+
+      <Dialog
+        open={pictureOpen}
+        onOpenChange={(next) => {
+          if (!next) {
+            setPictureOpen(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-xs">
+          <DialogTitle className="sr-only">
+            {currentProfile.displayName}&apos;s profile picture
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Enlarged profile picture. Close to go back.
+          </DialogDescription>
+          <div className="flex justify-center py-2">
+            {fullPictureSrc ? (
+              <img
+                src={fullPictureSrc}
+                alt={`${currentProfile.displayName}'s profile picture`}
+                className="h-64 w-64 rounded-full object-cover"
+              />
+            ) : (
+              <div className="grid h-64 w-64 place-items-center rounded-full bg-brand/10 text-6xl font-bold text-brand">
+                {currentProfile.displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ============================================================
           EDIT PROFILE SHEET
@@ -1264,7 +1343,7 @@ export function ProfilePage() {
   );
 }
 
-function ConnectionAction({ publicUserId }: { publicUserId: string }) {
+function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
   // Like the connections lists, this polls lightly + refetches on mount:
   // the peer's actions (cancel/accept) arrive with no socket push yet.
   const searchQuery = useSearchUsersQuery(publicUserId, {
@@ -1437,7 +1516,84 @@ function ConnectionAction({ publicUserId }: { publicUserId: string }) {
   );
 }
 
-function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
+function ProfileSafetyRow({
+  publicUserId,
+  username,
+}: {
+  publicUserId: string;
+  username: string;
+}) {
+  const blocksQuery = useBlocksQuery();
+  const [blockUser, blockState] = useBlockUserMutation();
+  const [unblockUser, unblockState] = useUnblockUserMutation();
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Best-effort match: the blocks list carries internal ids, so fall back to
+  // username. Server state is authoritative; the toggle self-corrects.
+  const blocked = (blocksQuery.data ?? []).some(
+    (entry) => entry.blockedUser.profile?.username === username,
+  );
+  const busy = blockState.isLoading || unblockState.isLoading;
+
+  async function handleBlock() {
+    setError(null);
+    try {
+      await blockUser({ blockedUserId: publicUserId }).unwrap();
+    } catch {
+      setError("Could not block this user. Please try again.");
+    }
+  }
+
+  async function handleUnblock() {
+    setError(null);
+    try {
+      await unblockUser(publicUserId).unwrap();
+    } catch {
+      setError("Could not unblock this user. Please try again.");
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => setReportTarget({ targetUserId: publicUserId })}
+          className="inline-flex items-center gap-1 text-[11px] text-ink-subtle transition-colors hover:text-ink"
+        >
+          <Flag className="h-3 w-3" aria-hidden />
+          Report
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void (blocked ? handleUnblock() : handleBlock())}
+          className="inline-flex items-center gap-1 text-[11px] text-ink-subtle transition-colors hover:text-ink disabled:opacity-50"
+        >
+          <Ban className="h-3 w-3" aria-hidden />
+          {blockState.isLoading
+            ? "Blocking..."
+            : unblockState.isLoading
+              ? "Unblocking..."
+              : blocked
+                ? "Unblock"
+                : "Block"}
+        </button>
+      </div>
+      {error ? (
+        <p className="max-w-55 text-right text-xs text-red-400">{error}</p>
+      ) : null}
+      <ReportDialog
+        target={reportTarget}
+        title="Report this user"
+        onClose={() => setReportTarget(null)}
+      />
+    </div>
+  );
+}
+
+function ConnectionAction({ publicUserId }: { publicUserId: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {

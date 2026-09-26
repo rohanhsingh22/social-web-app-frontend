@@ -2,31 +2,31 @@
 // Backend keys look like `vector_01`; files look like `Vector/Vector-1.png`.
 // The backend never serves image URLs, so the frontend resolves keys to
 // bundled asset URLs here. Unknown keys resolve to null (swatch fallback).
-import flux01 from "../assets/toli-avatar/Flux/Flux-1.png";
-import flux02 from "../assets/toli-avatar/Flux/Flux-2.png";
-import flux03 from "../assets/toli-avatar/Flux/Flux-3.png";
-import flux04 from "../assets/toli-avatar/Flux/Flux-4.png";
-import flux05 from "../assets/toli-avatar/Flux/Flux-5.png";
-import orbit01 from "../assets/toli-avatar/Orbit/Orbit-1.png";
-import orbit02 from "../assets/toli-avatar/Orbit/Orbit-2.png";
-import orbit03 from "../assets/toli-avatar/Orbit/Orbit-3.png";
-import orbit04 from "../assets/toli-avatar/Orbit/Orbit-4.png";
-import orbit05 from "../assets/toli-avatar/Orbit/Orbit-5.png";
-import quantum01 from "../assets/toli-avatar/Quantum/Quantum-1.png";
-import quantum02 from "../assets/toli-avatar/Quantum/Quantum-2.png";
-import quantum03 from "../assets/toli-avatar/Quantum/Quantum-3.png";
-import quantum04 from "../assets/toli-avatar/Quantum/Quantum-4.png";
-import quantum05 from "../assets/toli-avatar/Quantum/Quantum-5.png";
-import vector01 from "../assets/toli-avatar/Vector/Vector-1.png";
-import vector02 from "../assets/toli-avatar/Vector/Vector-2.png";
-import vector03 from "../assets/toli-avatar/Vector/Vector-3.png";
-import vector04 from "../assets/toli-avatar/Vector/Vector-4.png";
-import vector05 from "../assets/toli-avatar/Vector/Vector-5.png";
-import wave01 from "../assets/toli-avatar/Wave/Wave-1.png";
-import wave02 from "../assets/toli-avatar/Wave/Wave-2.png";
-import wave03 from "../assets/toli-avatar/Wave/Wave-3.png";
-import wave04 from "../assets/toli-avatar/Wave/Wave-4.png";
-import wave05 from "../assets/toli-avatar/Wave/Wave-5.png";
+import flux01 from "../assets/toli-avatar/Flux/Flux-1.webp";
+import flux02 from "../assets/toli-avatar/Flux/Flux-2.webp";
+import flux03 from "../assets/toli-avatar/Flux/Flux-3.webp";
+import flux04 from "../assets/toli-avatar/Flux/Flux-4.webp";
+import flux05 from "../assets/toli-avatar/Flux/Flux-5.webp";
+import orbit01 from "../assets/toli-avatar/Orbit/Orbit-1.webp";
+import orbit02 from "../assets/toli-avatar/Orbit/Orbit-2.webp";
+import orbit03 from "../assets/toli-avatar/Orbit/Orbit-3.webp";
+import orbit04 from "../assets/toli-avatar/Orbit/Orbit-4.webp";
+import orbit05 from "../assets/toli-avatar/Orbit/Orbit-5.webp";
+import quantum01 from "../assets/toli-avatar/Quantum/Quantum-1.webp";
+import quantum02 from "../assets/toli-avatar/Quantum/Quantum-2.webp";
+import quantum03 from "../assets/toli-avatar/Quantum/Quantum-3.webp";
+import quantum04 from "../assets/toli-avatar/Quantum/Quantum-4.webp";
+import quantum05 from "../assets/toli-avatar/Quantum/Quantum-5.webp";
+import vector01 from "../assets/toli-avatar/Vector/Vector-1.webp";
+import vector02 from "../assets/toli-avatar/Vector/Vector-2.webp";
+import vector03 from "../assets/toli-avatar/Vector/Vector-3.webp";
+import vector04 from "../assets/toli-avatar/Vector/Vector-4.webp";
+import vector05 from "../assets/toli-avatar/Vector/Vector-5.webp";
+import wave01 from "../assets/toli-avatar/Wave/Wave-1.webp";
+import wave02 from "../assets/toli-avatar/Wave/Wave-2.webp";
+import wave03 from "../assets/toli-avatar/Wave/Wave-3.webp";
+import wave04 from "../assets/toli-avatar/Wave/Wave-4.webp";
+import wave05 from "../assets/toli-avatar/Wave/Wave-5.webp";
 
 const AVATAR_SWATCHES = [
   "bg-identity-rose-soft text-identity-rose-ink",

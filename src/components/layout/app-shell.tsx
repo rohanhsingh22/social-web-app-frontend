@@ -9,6 +9,7 @@ import { ChannelList } from "@/features/channels/channel-list";
 import { useChannels } from "@/features/channels/api";
 import { useAuthSession } from "@/features/auth/api";
 import { useMyToliChannel } from "@/features/toli/api";
+import { useNotificationsSocket } from "@/features/notifications/use-notifications-socket";
 import { NotificationBellIcon } from "@/features/notifications/notification-bell";
 
 const navItems = [
@@ -31,6 +32,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Gate on the nested ref or the scalar id (session shapes vary).
   const hasToli = Boolean(profile?.toli ?? profile?.toliId);
   const toliChannelQuery = useMyToliChannel(Boolean(authQuery.data) && hasToli);
+  // Global push listener for connection/notification changes.
+  useNotificationsSocket(Boolean(authQuery.data));
 
   const activeSlug =
     pathname === "/"

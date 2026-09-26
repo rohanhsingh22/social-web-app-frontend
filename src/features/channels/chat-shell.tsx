@@ -14,6 +14,10 @@ import { SenderAvatar } from "@/components/common/sender-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { LockedPanel } from "@/components/common/locked-panel";
 import {
+  ReportDialog,
+  type ReportTarget,
+} from "@/components/safety/report-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
@@ -45,6 +49,7 @@ import type { ChannelMessage } from "@/types/domain";
 export function ChatShell({ initialSlug }: { initialSlug?: string }) {
   const [message, setMessage] = useState("");
   const [isChannelListOpen, setIsChannelListOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const [messageState, setMessageState] = useState<{
     channelId?: string;
     older: ChannelMessage[];
@@ -491,6 +496,22 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                       >
                         Visit profile
                       </Button>
+                      {isLoggedIn &&
+                      authQuery.data?.user?.id !== item.sender.id ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="mt-1 w-full justify-center text-ink-subtle"
+                          onClick={() => {
+                            setReportTarget({
+                              targetChannelMessageId: item.id,
+                            });
+                          }}
+                        >
+                          Report message
+                        </Button>
+                      ) : null}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <div className="min-w-0 flex-1">
@@ -661,6 +682,12 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
           />
         </SheetContent>
       </Sheet>
+
+      <ReportDialog
+        target={reportTarget}
+        title="Report this message"
+        onClose={() => setReportTarget(null)}
+      />
     </AppShell>
   );
 }

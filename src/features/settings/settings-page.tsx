@@ -589,6 +589,11 @@ import {
   type ThemePreference,
   type ProfileVisibility,
 } from "@/rtk/settings/settings-api";
+import {
+  useBlocksQuery,
+  useUnblockUserMutation,
+} from "@/rtk/safety/safety-api";
+import { SenderAvatar } from "@/components/common/sender-avatar";
 
 import {
   setThemeMode,
@@ -1008,6 +1013,114 @@ function ToliSettingsSection() {
         {saving ? "Saving..." : saved ? "Saved!" : "Save Toli"}
       </Button>
     </div>
+  );
+}
+
+
+/* =========================================================
+   BLOCKED USERS SECTION
+========================================================= */
+
+function BlockedUsersSection() {
+  const blocksQuery = useBlocksQuery();
+  const [unblockUser] = useUnblockUserMutation();
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const blocks = blocksQuery.data ?? [];
+
+  async function handleUnblock(block: {
+    id: string;
+    blockedUser: { publicUserId?: string };
+  }) {
+    const target = block.blockedUser.publicUserId;
+    if (!target) {
+      setFailed(true);
+      return;
+    }
+    setFailed(false);
+    setUnblockingId(block.id);
+    try {
+      await unblockUser(target).unwrap();
+    } catch {
+      setFailed(true);
+    } finally {
+      setUnblockingId(null);
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl border-line shadow-none">
+      <CardHeader className="px-5 pb-3 pt-5">
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-surface-muted text-ink-subtle">
+            <Shield className="h-4 w-4" />
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold text-ink">Blocked users</h3>
+
+            <p className="text-[11px] text-ink-subtle">
+              Blocked users cannot message you or send requests.
+            </p>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="px-5 pb-5">
+        {blocksQuery.isLoading ? (
+          <p className="text-xs text-ink-muted">Loading...</p>
+        ) : blocks.length === 0 ? (
+          <p className="text-xs text-ink-muted">No blocked users.</p>
+        ) : (
+          <div className="space-y-2">
+            {blocks.map((block) => (
+              <div
+                key={block.id}
+                className="flex items-center gap-3 rounded-xl px-2 py-2"
+              >
+                {block.blockedUser.profile ? (
+                  <SenderAvatar
+                    sender={{
+                      displayName:
+                        block.blockedUser.profile.displayName,
+                      avatarUrl:
+                        block.blockedUser.profile.avatarUrl ?? null,
+                      profilePicture:
+                        block.blockedUser.profile.profilePicture,
+                    }}
+                    size={40}
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-ink">
+                    {block.blockedUser.profile?.displayName ?? "Unknown user"}
+                  </p>
+                  <p className="truncate text-[11px] text-ink-subtle">
+                    @{block.blockedUser.profile?.username ?? "unknown"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  disabled={unblockingId === block.id}
+                  onClick={() => void handleUnblock(block)}
+                >
+                  {unblockingId === block.id ? "Unblocking..." : "Unblock"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        {failed ? (
+          <p className="mt-2 rounded-xl border border-danger bg-danger-soft p-3 text-xs text-danger-ink">
+            Could not unblock. Please try again.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1918,6 +2031,10 @@ export function SettingsPage() {
 
                     </CardContent>
                   </Card>
+
+
+                  {/* Blocked users */}
+                  <BlockedUsersSection />
 
 
                   {/* Notifications placeholder */}

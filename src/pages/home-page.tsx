@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
+import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToliBadge } from "@/components/toli/toli-badge";
@@ -19,11 +20,35 @@ const SHOWCASE_CHARACTERS = [
 
 export default function HomePage() {
   const authQuery = useAuthSession();
+  const isLoggedIn = Boolean(authQuery.data);
   const profile = authQuery.data?.profile;
   // Gate on the nested ref or the scalar id (session shapes vary).
   const hasToli = Boolean(profile?.toli ?? profile?.toliId);
   const toliName = profile?.toli?.name;
-  const toliChannelQuery = useMyToliChannel(hasToli);
+  const toliChannelQuery = useMyToliChannel(isLoggedIn && hasToli);
+
+  if (authQuery.isLoading) {
+    return (
+      <AppShell>
+        <section className="grid min-h-dvh place-items-center px-4">
+          <div className="rounded-lg border border-line bg-surface p-5 text-sm text-ink-muted">
+            Loading...
+          </div>
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <AppShell>
+        <LockedPanel
+          title="Login required"
+          message="Login to see your home, character, and Toli room."
+        />
+      </AppShell>
+    );
+  }
 
   const configs = profile?.characterConfig
     ? [profile.characterConfig]
@@ -57,7 +82,8 @@ export default function HomePage() {
               </p>
             )}
           </div>
-        ) : authQuery.data ? (
+        ) : (
+          // Logged in without a Toli yet.
           <div className="absolute left-4 top-4 z-10 rounded-2xl border border-line bg-surface/90 p-3 backdrop-blur">
             <p className="text-[11px] font-bold uppercase tracking-wide text-ink-subtle">
               My Toli
@@ -69,7 +95,7 @@ export default function HomePage() {
               Choose your Toli →
             </Link>
           </div>
-        ) : null}
+        )}
         <Suspense
           fallback={
             <div className="grid h-full place-items-center">

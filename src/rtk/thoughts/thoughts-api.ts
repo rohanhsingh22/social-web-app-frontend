@@ -49,6 +49,33 @@ export const thoughtsApi = baseApi.injectEndpoints({
         normalizeThoughtPage(response),
       providesTags: ["Thoughts"],
     }),
+    myThoughts: builder.query<ThoughtPage, { cursor?: string | null }>({
+      query: ({ cursor }) => {
+        const params = new URLSearchParams({ limit: "20" });
+        if (cursor) {
+          params.set("cursor", cursor);
+        }
+        return `/thoughts/mine?${params.toString()}`;
+      },
+      transformResponse: (response: unknown) =>
+        normalizeThoughtPage(response),
+      providesTags: ["Thoughts"],
+    }),
+    thoughtsByUser: builder.query<
+      ThoughtPage,
+      { publicUserId: string; cursor?: string | null }
+    >({
+      query: ({ publicUserId, cursor }) => {
+        const params = new URLSearchParams({ limit: "20" });
+        if (cursor) {
+          params.set("cursor", cursor);
+        }
+        return `/thoughts/by-user/${encodeURIComponent(publicUserId)}?${params.toString()}`;
+      },
+      transformResponse: (response: unknown) =>
+        normalizeThoughtPage(response),
+      providesTags: ["Thoughts"],
+    }),
     thought: builder.query<Thought | null, string>({
       query: (id) => `/thoughts/${id}`,
       transformResponse: (response: unknown) => {
@@ -65,6 +92,29 @@ export const thoughtsApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: unknown) => normalizeThought(response),
       invalidatesTags: ["Thoughts"],
+    }),
+    updateThought: builder.mutation<Thought, { id: string; body: string }>({
+      query: ({ id, body }) => ({
+        url: `/thoughts/${id}`,
+        method: "PATCH",
+        body: { body },
+      }),
+      transformResponse: (response: unknown) => normalizeThought(response),
+      invalidatesTags: (_result, _error, { id }) => [
+        "Thoughts",
+        { type: "Thought", id },
+      ],
+    }),
+    deleteThought: builder.mutation<{ ok: boolean }, string>({
+      query: (id) => ({
+        url: `/thoughts/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        "Thoughts",
+        { type: "Thought", id },
+        { type: "ThoughtComments", id },
+      ],
     }),
     thoughtComments: builder.query<
       ThoughtCommentPage,
@@ -131,6 +181,16 @@ export const thoughtsApi = baseApi.injectEndpoints({
         { type: "Thought", id },
       ],
     }),
+    unshareThought: builder.mutation<{ ok: boolean }, string>({
+      query: (id) => ({
+        url: `/thoughts/${id}/share`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        "Thoughts",
+        { type: "Thought", id },
+      ],
+    }),
     hideThought: builder.mutation<{ hidden: boolean }, string>({
       query: (id) => ({
         url: `/thoughts/${id}/hide`,
@@ -170,14 +230,21 @@ export const {
   useLazyFreshThoughtsQuery,
   useForYouThoughtsQuery,
   useLazyForYouThoughtsQuery,
+  useMyThoughtsQuery,
+  useLazyMyThoughtsQuery,
+  useThoughtsByUserQuery,
+  useLazyThoughtsByUserQuery,
   useThoughtQuery,
   useCreateThoughtMutation,
+  useUpdateThoughtMutation,
+  useDeleteThoughtMutation,
   useThoughtCommentsQuery,
   useLazyThoughtCommentsQuery,
   useCreateThoughtCommentMutation,
   useLikeThoughtMutation,
   useUnlikeThoughtMutation,
   useShareThoughtMutation,
+  useUnshareThoughtMutation,
   useHideThoughtMutation,
   useUnhideThoughtMutation,
   useReportThoughtMutation,
@@ -194,6 +261,24 @@ export function useForYouThoughts(enabled: boolean) {
   return useForYouThoughtsQuery(
     { cursor: null },
     { skip: !enabled },
+  );
+}
+
+export function useMyThoughts(enabled: boolean) {
+  return useMyThoughtsQuery(
+    { cursor: null },
+    { skip: !enabled },
+  );
+}
+
+export function useThoughtsByUser(
+  publicUserId: string | undefined,
+  enabled: boolean,
+) {
+  return useThoughtsByUserQuery(
+    publicUserId && enabled
+      ? { publicUserId, cursor: null }
+      : skipToken,
   );
 }
 

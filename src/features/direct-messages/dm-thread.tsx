@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SendHorizonal, AlertCircle, LogIn } from "lucide-react";
+import { SendHorizonal, AlertCircle, Flag, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
 import { SenderAvatar } from "@/components/common/sender-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
+import {
+  ReportDialog,
+  type ReportTarget,
+} from "@/components/safety/report-dialog";
 import { useAuthSession } from "@/features/auth/api";
 import { useDmMessages, useLazyDmMessagesQuery } from "@/features/direct-messages/api";
 import { useMarkNotificationsReadMutation } from "@/features/notifications/api";
@@ -22,8 +26,9 @@ export function DmThread({ conversationId }: { conversationId: string }) {
   const isLoggedIn = Boolean(authQuery.data);
 
   const messagesQuery = useDmMessages(conversationId, userId);
-  const [loadOlder] = useLazyDmMessagesQuery();
+  const [loadOlder, loadOlderResult] = useLazyDmMessagesQuery();
   const [markConversationRead] = useMarkNotificationsReadMutation();
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   // Actively viewing the thread clears its DM notifications (read state is
   // maintained; no toast noise while reading).
@@ -341,9 +346,9 @@ export function DmThread({ conversationId }: { conversationId: string }) {
               variant="ghost"
               size="sm"
               onClick={handleLoadOlder}
-              disabled={messagesQuery.isLoading || messageState.hasPaged}
+              disabled={messagesQuery.isLoading || loadOlderResult.isFetching}
             >
-              {messageState.hasPaged ? "Loaded" : "Load older messages"}
+              {loadOlderResult.isFetching ? "Loading..." : "Load older messages"}
             </Button>
           </div>
         ) : null}
@@ -377,6 +382,9 @@ export function DmThread({ conversationId }: { conversationId: string }) {
             key={item.id}
             message={item}
             isOwn={item.senderId === userId}
+            onReport={() =>
+              setReportTarget({ targetDirectMessageId: item.id })
+            }
           />
         ))}
       </div>
@@ -470,6 +478,12 @@ export function DmThread({ conversationId }: { conversationId: string }) {
           </>
         )}
       </footer>
+
+      <ReportDialog
+        target={reportTarget}
+        title="Report this message"
+        onClose={() => setReportTarget(null)}
+      />
     </div>
   );
 }
@@ -477,9 +491,11 @@ export function DmThread({ conversationId }: { conversationId: string }) {
 function DmMessageRow({
   message,
   isOwn,
+  onReport,
 }: {
   message: DirectMessage;
   isOwn: boolean;
+  onReport: () => void;
 }) {
   const senderProfile = isOwn
     ? null
@@ -488,7 +504,7 @@ function DmMessageRow({
   return (
     <article
       className={[
-        "mb-4 flex gap-3",
+        "group mb-4 flex gap-3",
         isOwn ? "justify-end" : "justify-start",
       ].join(" ")}
     >
@@ -521,6 +537,18 @@ function DmMessageRow({
           }).format(new Date(message.createdAt))}
         </time>
       </div>
+
+      {!isOwn ? (
+        <button
+          type="button"
+          onClick={onReport}
+          title="Report this message"
+          aria-label="Report this message"
+          className="h-fit shrink-0 self-center rounded-full p-1.5 text-ink-subtle opacity-0 transition-opacity hover:bg-surface-hover hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <Flag className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      ) : null}
     </article>
   );
 }

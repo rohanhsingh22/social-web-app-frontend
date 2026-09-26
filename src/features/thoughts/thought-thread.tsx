@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { LockedPanel } from "@/components/common/locked-panel";
@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
 import {
   useCreateThoughtCommentMutation,
+  useLazyThoughtCommentsQuery,
   useThought,
   useThoughtCommentsQuery,
 } from "@/features/thoughts/api";
@@ -17,6 +18,7 @@ import { SenderAvatar } from "@/components/common/sender-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { formatThoughtTime } from "@/lib/thought-time";
 import { skipToken } from "@reduxjs/toolkit/query";
+import type { ThoughtComment } from "@/types/domain";
 
 const MAX_LENGTH = 500;
 
@@ -29,7 +31,16 @@ export function ThoughtThread() {
     id && isLoggedIn ? { id, cursor: null } : skipToken,
   );
   const [createComment, createState] = useCreateThoughtCommentMutation();
+  const [loadMore, loadMoreState] = useLazyThoughtCommentsQuery();
   const [body, setBody] = useState("");
+  const [extra, setExtra] = useState<{
+    comments: ThoughtComment[];
+    cursor: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    setExtra(null);
+  }, [id]);
 
   if (!isLoggedIn) {
     return (
@@ -45,6 +56,29 @@ export function ThoughtThread() {
   const thought = thoughtQuery.data ?? undefined;
   const trimmed = body.trim();
   const valid = trimmed.length > 0 && trimmed.length <= MAX_LENGTH;
+  const initialComments = commentsQuery.data?.comments ?? [];
+  const nextCursor = extra
+    ? extra.cursor
+    : (commentsQuery.data?.pageInfo.nextCursor ?? null);
+  const visibleComments = [...(extra?.comments ?? []), ...initialComments];
+
+  async function handleLoadMore() {
+    if (!id || !nextCursor || loadMoreState.isFetching) {
+      return;
+    }
+    const page = await loadMore({ id, cursor: nextCursor }).unwrap();
+    setExtra((current) => {
+      const known = new Set([
+        ...(current?.comments ?? []).map((item) => item.id),
+        ...initialComments.map((item) => item.id),
+      ]);
+      const fresh = page.comments.filter((item) => !known.has(item.id));
+      return {
+        comments: [...fresh, ...(current?.comments ?? [])],
+        cursor: page.pageInfo.nextCursor,
+      };
+    });
+  }
 
   async function submitComment() {
     if (!id || !valid || createState.isLoading) {
@@ -105,7 +139,7 @@ export function ThoughtThread() {
         ) : null}
 
         <div className="mt-4 grid gap-3">
-          {commentsQuery.data?.comments.map((comment) => (
+          {visibleComments.map((comment) => (
             <article
               key={comment.id}
               className="flex gap-3 rounded-2xl border border-line bg-surface p-4"
@@ -129,10 +163,25 @@ export function ThoughtThread() {
               </div>
             </article>
           ))}
-          {commentsQuery.data && commentsQuery.data.comments.length === 0 ? (
+          {commentsQuery.data && visibleComments.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-line-strong bg-surface-muted p-6 text-center text-sm text-ink-muted">
               No comments yet.
             </p>
+          ) : null}
+          {nextCursor ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={loadMoreState.isFetching}
+                onClick={() => void handleLoadMore()}
+              >
+                {loadMoreState.isFetching
+                  ? "Loading..."
+                  : "Load more comments"}
+              </Button>
+            </div>
           ) : null}
         </div>
       </section>

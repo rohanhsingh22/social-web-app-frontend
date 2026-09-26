@@ -66,6 +66,8 @@ export const baseApi = createApi({
     "Thought",
     "ThoughtComments",
     "Notifications",
+    "Blocks",
+    "Reports",
   ],
   endpoints: () => ({}),
 });

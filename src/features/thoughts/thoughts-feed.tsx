@@ -7,6 +7,8 @@ import {
   useFreshThoughtsQuery,
   useLazyForYouThoughtsQuery,
   useLazyFreshThoughtsQuery,
+  useLazyMyThoughtsQuery,
+  useMyThoughtsQuery,
 } from "@/features/thoughts/api";
 import { ThoughtCard } from "@/features/thoughts/thought-card";
 import { ThoughtComposer } from "@/features/thoughts/thought-composer";
@@ -15,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Thought } from "@/types/domain";
 
-type FeedTab = "for-you" | "fresh";
+type FeedTab = "for-you" | "fresh" | "mine";
 
 export function ThoughtsFeed() {
   const authQuery = useAuthSession();
@@ -31,8 +33,13 @@ export function ThoughtsFeed() {
     { cursor: null },
     { skip: tab !== "for-you" || !isLoggedIn },
   );
+  const mine = useMyThoughtsQuery(
+    { cursor: null },
+    { skip: tab !== "mine" || !isLoggedIn },
+  );
   const [loadFresh, freshMore] = useLazyFreshThoughtsQuery();
   const [loadForYou, forYouMore] = useLazyForYouThoughtsQuery();
+  const [loadMine, mineMore] = useLazyMyThoughtsQuery();
 
   useEffect(() => {
     setOlder([]);
@@ -49,8 +56,9 @@ export function ThoughtsFeed() {
     );
   }
 
-  const active = tab === "fresh" ? fresh : forYou;
-  const loadingMore = freshMore.isFetching || forYouMore.isFetching;
+  const active = tab === "fresh" ? fresh : tab === "mine" ? mine : forYou;
+  const loadingMore =
+    freshMore.isFetching || forYouMore.isFetching || mineMore.isFetching;
   const initial = active.data?.thoughts ?? [];
   const known = new Set(initial.map((thought) => thought.id));
   const items = [...initial, ...older.filter((thought) => !known.has(thought.id))];
@@ -66,7 +74,9 @@ export function ThoughtsFeed() {
     const page =
       tab === "fresh"
         ? await loadFresh({ cursor }).unwrap()
-        : await loadForYou({ cursor }).unwrap();
+        : tab === "mine"
+          ? await loadMine({ cursor }).unwrap()
+          : await loadForYou({ cursor }).unwrap();
 
     setOlder((current) => {
       const ids = new Set([
@@ -82,8 +92,11 @@ export function ThoughtsFeed() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-6">
-        <h1 className="text-2xl font-bold text-ink">Thoughts</h1>
+      {/* AppShell locks <main> to h-full + overflow-hidden on desktop,
+          so the feed must own its scroll container (mobile keeps body scroll). */}
+      <div className="min-h-dvh lg:h-full lg:overflow-y-auto">
+        <section className="mx-auto max-w-2xl px-4 py-6">
+          <h1 className="text-2xl font-bold text-ink">Thoughts</h1>
 
         <div className="mt-4">
           <ThoughtComposer
@@ -98,6 +111,7 @@ export function ThoughtsFeed() {
             [
               { id: "for-you", label: "For You" },
               { id: "fresh", label: "Fresh" },
+              { id: "mine", label: "Your Thoughts" },
             ] as const
           ).map((option) => (
             <Button
@@ -141,7 +155,9 @@ export function ThoughtsFeed() {
 
           {!active.isLoading && items.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-line-strong bg-surface-muted p-8 text-center text-sm text-ink-muted">
-              No thoughts yet. Be the first to share one.
+              {tab === "mine"
+                ? "You haven't shared any thoughts yet. Use the composer above to post your first one."
+                : "No thoughts yet. Be the first to share one."}
             </p>
           ) : null}
 
@@ -159,8 +175,9 @@ export function ThoughtsFeed() {
               {loadingMore ? "Loading..." : "Load more"}
             </Button>
           ) : null}
-        </div>
-      </section>
+          </div>
+        </section>
+      </div>
     </AppShell>
   );
 }

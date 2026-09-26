@@ -4,6 +4,7 @@ import { ensureFreshAccessToken } from "@/lib/auth-token";
 
 export const REALTIME_NAMESPACE = "/channels";
 export const REALTIME_DM_NAMESPACE = "/dm";
+export const REALTIME_NOTIFICATIONS_NAMESPACE = "/notifications";
 
 export type ChannelSocketStatus =
   | "idle"
@@ -97,6 +98,28 @@ export async function createDmSocket(): Promise<Socket> {
   const token = await ensureFreshAccessToken();
 
   return io(`${config.realtimeUrl}${REALTIME_DM_NAMESPACE}`, {
+    autoConnect: true,
+    transports: ["websocket", "polling"],
+    auth: token ? { token } : undefined,
+    extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+  });
+}
+
+export type NotificationsSocketStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected";
+
+export async function createNotificationsSocket(): Promise<Socket> {
+  const token = await ensureFreshAccessToken();
+
+  return io(`${config.realtimeUrl}${REALTIME_NOTIFICATIONS_NAMESPACE}`, {
     autoConnect: true,
     transports: ["websocket", "polling"],
     auth: token ? { token } : undefined,
