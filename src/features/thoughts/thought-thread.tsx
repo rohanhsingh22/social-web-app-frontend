@@ -14,7 +14,7 @@ import { ThoughtCard } from "@/features/thoughts/thought-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { formatThoughtTime } from "@/lib/thought-time";
 import { skipToken } from "@reduxjs/toolkit/query";
@@ -144,7 +144,7 @@ export function ThoughtThread() {
               key={comment.id}
               className="flex gap-3 rounded-2xl border border-line bg-surface p-4"
             >
-              <SenderAvatar sender={comment.author} size={32} />
+              <UserAvatar user={comment.author} size={32} />
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="font-semibold text-ink">

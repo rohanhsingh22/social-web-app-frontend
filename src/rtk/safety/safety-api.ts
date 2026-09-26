@@ -89,6 +89,7 @@ function normalizeBlockedProfile(value: unknown): ConnectionProfile | null {
     : [];
   return {
     username: asString(value.username, "unknown"),
+    publicUserId: asOptionalString(value.publicUserId ?? value.public_user_id),
     displayName: asString(value.displayName ?? value.display_name, "Unknown user"),
     avatarUrl: asOptionalString(value.avatarUrl ?? value.avatar_url) ?? undefined,
     profilePicture: normalizeProfilePicture(
@@ -112,17 +113,21 @@ function asOptionalString(value: unknown): string | undefined {
 function normalizeBlockedEntry(value: unknown): BlockedEntry {
   const record = isRecord(value) ? value : {};
   const blockedUser = isRecord(record.blockedUser) ? record.blockedUser : {};
+  const publicUserId =
+    asOptionalString(blockedUser.publicUserId ?? blockedUser.public_user_id) ??
+    undefined;
+  const profile = normalizeBlockedProfile(blockedUser.profile);
+  if (profile && !profile.publicUserId) {
+    profile.publicUserId = publicUserId;
+  }
   return {
     id: asString(record.id, "unknown"),
     blockedUserId: asString(record.blockedUserId ?? record.blocked_user_id, ""),
     createdAt: asString(record.createdAt ?? record.created_at, ""),
     blockedUser: {
       id: asString(blockedUser.id, "unknown"),
-      publicUserId:
-        asOptionalString(
-          blockedUser.publicUserId ?? blockedUser.public_user_id,
-        ) ?? undefined,
-      profile: normalizeBlockedProfile(blockedUser.profile),
+      publicUserId,
+      profile,
     },
   };
 }

@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { HirotoliId } from "@/components/common/hirotoli-id";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import {
   DropdownMenu,
@@ -211,10 +212,10 @@ function ConnectionCard({ connection }: { connection: Connection }) {
     <>
       <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
         {profile ? (
-          <SenderAvatar sender={profile} size={44} />
+          <UserAvatar user={profile} size={44} />
         ) : (
-          <SenderAvatar
-            sender={{ displayName: "Unknown user", avatarUrl: undefined }}
+          <UserAvatar
+            user={{ displayName: "Unknown user", avatarUrl: undefined }}
             size={44}
           />
         )}
@@ -224,7 +225,10 @@ function ConnectionCard({ connection }: { connection: Connection }) {
             {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
           </p>
           <p className="truncate text-sm text-ink-muted">
-            @{profile?.username ?? "unknown"}
+            <HirotoliId
+              publicUserId={otherUser.publicUserId ?? profile?.publicUserId}
+              username={profile?.username}
+            />
           </p>
         </div>
         <Button variant="outline" size="sm" disabled>
@@ -293,10 +297,10 @@ function ReceivedRequestCard({ request }: { request: ConnectionRequest }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
       {profile ? (
-        <SenderAvatar sender={profile} size={44} />
+        <UserAvatar user={profile} size={44} />
       ) : (
-        <SenderAvatar
-          sender={{ displayName: "Unknown user", avatarUrl: undefined }}
+        <UserAvatar
+          user={{ displayName: "Unknown user", avatarUrl: undefined }}
           size={44}
         />
       )}
@@ -306,7 +310,10 @@ function ReceivedRequestCard({ request }: { request: ConnectionRequest }) {
           {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
         </p>
         <p className="truncate text-sm text-ink-muted">
-          @{profile?.username ?? "unknown"}
+          <HirotoliId
+            publicUserId={otherUser.publicUserId ?? profile?.publicUserId}
+            username={profile?.username}
+          />
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -334,10 +341,10 @@ function SentRequestCard({ request }: { request: ConnectionRequest }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
       {profile ? (
-        <SenderAvatar sender={profile} size={44} />
+        <UserAvatar user={profile} size={44} />
       ) : (
-        <SenderAvatar
-          sender={{ displayName: "Unknown user", avatarUrl: undefined }}
+        <UserAvatar
+          user={{ displayName: "Unknown user", avatarUrl: undefined }}
           size={44}
         />
       )}
@@ -347,7 +354,10 @@ function SentRequestCard({ request }: { request: ConnectionRequest }) {
           {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
         </p>
         <p className="truncate text-sm text-ink-muted">
-          @{profile?.username ?? "unknown"}
+          <HirotoliId
+            publicUserId={otherUser.publicUserId ?? profile?.publicUserId}
+            username={profile?.username}
+          />
         </p>
         <p className="text-xs text-ink-subtle">Pending</p>
       </div>
@@ -452,7 +462,7 @@ function UserResultCard({
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      <SenderAvatar sender={user.profile} size={44} />
+      <UserAvatar user={user.profile} size={44} />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
           {user.profile.displayName}
@@ -461,9 +471,11 @@ function UserResultCard({
           ) : null}
         </p>
         <p className="truncate text-sm text-ink-muted">
-          @{user.profile.username}
+          <HirotoliId
+            publicUserId={user.publicUserId ?? user.id}
+            username={user.profile.username}
+          />
         </p>
-        <p className="truncate text-xs text-ink-subtle">{user.id}</p>
       </div>
       {connection?.status === "accepted" ? (
         <Button variant="outline" size="sm" disabled>

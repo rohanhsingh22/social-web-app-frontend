@@ -12,7 +12,9 @@ const AVATAR_SRC: Record<CharacterConfig["gender"], string> = {
   female: "/character-scene/female.glb",
 };
 
-export function Avatar({
+// 3D character model (R3F). Deliberately NOT named Avatar: the 2D user
+// photo lives in components/common/user-avatar.tsx (UserAvatar).
+export function CharacterAvatar({
   config,
   position = [0, 0, 0],
   scale = 1,

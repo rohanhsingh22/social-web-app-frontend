@@ -136,6 +136,7 @@ export type ConnectionState =
 export type ConnectionProfile = {
   username: string;
   displayName: string;
+  publicUserId?: string;
   avatarUrl?: string;
   profilePicture: ProfilePicture;
   toli: ToliRef | null;
@@ -148,6 +149,7 @@ export type ConnectionProfile = {
 
 export type ConnectionUser = {
   id: string;
+  publicUserId?: string;
   profile: ConnectionProfile | null;
 };
 
@@ -221,6 +223,7 @@ export type Profile = UserSummary & {
 export type SearchUserProfile = {
   username: string;
   displayName: string;
+  publicUserId?: string;
   avatarUrl?: string;
   profilePicture: ProfilePicture;
   toli: ToliRef | null;
@@ -240,6 +243,7 @@ export type SearchUserConnection = {
 };
 export type SearchUserResult = {
   id: string;
+  publicUserId?: string;
   profile: SearchUserProfile;
   connection: SearchUserConnection | null;
 };

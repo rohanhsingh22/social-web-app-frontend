@@ -5,13 +5,21 @@ import {
   Flag,
   Heart,
   MessageCircle,
+  MoreHorizontal,
   Pencil,
   Share2,
   Trash2,
 } from "lucide-react";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { HirotoliId } from "@/components/common/hirotoli-id";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { formatThoughtTime } from "@/lib/thought-time";
 import { cn } from "@/lib/utils";
@@ -39,7 +47,15 @@ const REPORT_REASONS = [
   "other",
 ] as const;
 
-export function ThoughtCard({ thought }: { thought: Thought }) {
+export function ThoughtCard({
+  thought,
+  index = 0,
+  spotlight = false,
+}: {
+  thought: Thought;
+  index?: number;
+  spotlight?: boolean;
+}) {
   const navigate = useNavigate();
   const authQuery = useAuthSession();
   const isOwn = Boolean(
@@ -120,17 +136,26 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
     setEditing(false);
   }
 
-  async function handleDelete() {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
+  function openEditor() {
+    setEditBody(thought.body);
+    setEditing(true);
+    setConfirmingDelete(false);
+  }
+
+  async function confirmDelete() {
     await deleteThought(thought.id).unwrap();
+    setConfirmingDelete(false);
+  }
+
+  function openProfile() {
+    if (thought.author.publicUserId) {
+      void navigate(`/profile/${thought.author.publicUserId}`);
+    }
   }
 
   if (thought.viewer.hidden) {
     return (
-      <article className="rounded-2xl border border-line bg-surface p-4">
+      <article className="rounded-[1.75rem] border border-line bg-surface/80 p-5 shadow-sm backdrop-blur">
         <p className="text-sm text-ink-muted">
           You hid this thought.{" "}
           <button
@@ -147,44 +172,116 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
   }
 
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4">
+    <article
+      className={
+        spotlight
+          ? "group px-5 pb-5 pt-1"
+          : "feed-item group rounded-[1.75rem] border border-line bg-surface/80 p-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/10"
+      }
+      style={spotlight ? undefined : { animationDelay: `${Math.min(index, 8) * 60}ms` }}
+    >
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => {
-            if (thought.author.publicUserId) {
-              void navigate(`/profile/${thought.author.publicUserId}`);
-            }
-          }}
+          onClick={openProfile}
           aria-label={`View ${thought.author.displayName}'s profile`}
+          className="shrink-0 rounded-full bg-gradient-to-br from-brand via-[#5B3FF5] to-[#D94FE8] p-[2px] outline-none transition focus-visible:ring-2 focus-visible:ring-brand"
         >
-          <SenderAvatar sender={thought.author} size={40} />
+          <span className="block rounded-full bg-surface p-[2px]">
+            <UserAvatar user={thought.author} size={42} />
+          </span>
         </button>
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-semibold text-ink">
+            <button
+              type="button"
+              onClick={openProfile}
+              className="truncate text-[15px] font-bold text-ink hover:underline outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
               {thought.author.displayName}
-            </span>
+            </button>
             {thought.author.toli ? (
               <ToliBadge name={thought.author.toli.name} />
             ) : null}
           </p>
-          <p className="text-xs text-ink-subtle">
-            @{thought.author.username} · {formatThoughtTime(thought.createdAt)}
+          <p className="text-[13px] text-ink-subtle">
+            <HirotoliId
+              publicUserId={thought.author.publicUserId}
+              username={thought.author.username}
+            />{" "}
+            · {formatThoughtTime(thought.createdAt)}
           </p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={busy}
+              aria-label="Thought actions"
+              className="h-8 w-8 shrink-0 rounded-full text-ink-subtle opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              <MoreHorizontal className="h-4 w-4" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {isOwn ? (
+              <>
+                <DropdownMenuItem
+                  onSelect={openEditor}
+                  className="cursor-pointer gap-2"
+                >
+                  <Pencil className="h-4 w-4" aria-hidden />
+                  Edit thought
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setConfirmingDelete(true);
+                    setEditing(false);
+                  }}
+                  className="cursor-pointer gap-2 text-danger-ink focus:text-danger-ink"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                  Delete thought
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <>
+                <DropdownMenuItem
+                  onSelect={() => void hide(thought.id)}
+                  className="cursor-pointer gap-2"
+                >
+                  <EyeOff className="h-4 w-4" aria-hidden />
+                  Hide thought
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setReporting(true);
+                    setConfirmingDelete(false);
+                  }}
+                  className="cursor-pointer gap-2"
+                >
+                  <Flag className="h-4 w-4" aria-hidden />
+                  Report thought
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <p className="mt-3 break-words text-sm leading-6 text-ink">
+      <p className="mt-3 break-words text-[15px] leading-7 text-ink">
         {thought.body}
       </p>
 
       {editing ? (
-        <div className="mt-3 grid gap-2">
+        <div className="mt-3 grid gap-2 rounded-2xl bg-surface-muted p-3">
           <Textarea
             value={editBody}
             maxLength={1000}
             rows={3}
+            aria-label="Edit thought"
             onChange={(event) => setEditBody(event.target.value)}
           />
           <div className="flex gap-2">
@@ -193,6 +290,7 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
               size="sm"
               disabled={busy || !editBody.trim()}
               onClick={() => void saveEdit()}
+              className="rounded-full"
             >
               {updateState.isLoading ? "Saving..." : "Save"}
             </Button>
@@ -205,6 +303,7 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
                 setEditing(false);
                 setEditBody(thought.body);
               }}
+              className="rounded-full"
             >
               Cancel
             </Button>
@@ -212,35 +311,66 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
         </div>
       ) : null}
 
-      <div className="mt-3 flex items-center gap-1 border-t border-line pt-2">
+      {confirmingDelete ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-danger bg-danger-soft p-3">
+          <p className="text-sm font-medium text-danger-ink">
+            Delete this thought forever?
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setConfirmingDelete(false)}
+              className="rounded-full"
+            >
+              Keep
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={busy}
+              onClick={() => void confirmDelete()}
+              className="rounded-full"
+            >
+              {deleteState.isLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-3 flex items-center gap-1.5 border-t border-line/70 pt-2.5">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           disabled={busy}
           onClick={() => void toggleLike()}
-          aria-label={thought.viewer.liked ? "Unlike" : "Like"}
+          aria-label={thought.viewer.liked ? "Unlike thought" : "Like thought"}
           className={cn(
-            "gap-1.5",
-            thought.viewer.liked && "text-rose-600",
+            "gap-1.5 rounded-full px-3 text-ink-subtle transition-all hover:bg-danger-soft hover:text-danger-ink active:scale-95",
+            thought.viewer.liked && "bg-danger-soft text-danger-ink",
           )}
         >
           <Heart
-            className={cn("h-4 w-4", thought.viewer.liked && "fill-current")}
+            className={cn("h-[18px] w-[18px]", thought.viewer.liked && "fill-current")}
             aria-hidden
           />
-          {thought.counts.likes}
+          <span className="text-[13px] font-semibold">{thought.counts.likes}</span>
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           asChild
-          className="gap-1.5"
+          aria-label={`Open comments, ${thought.counts.comments} replies`}
+          className="gap-1.5 rounded-full px-3 text-ink-subtle transition-all hover:bg-brand-soft hover:text-brand-ink active:scale-95"
         >
-          <Link to={`/thoughts/${thought.id}`} aria-label="Open comments">
-            <MessageCircle className="h-4 w-4" aria-hidden />
-            {thought.counts.comments}
+          <Link to={`/thoughts/${thought.id}`}>
+            <MessageCircle className="h-[18px] w-[18px]" aria-hidden />
+            <span className="text-[13px] font-semibold">{thought.counts.comments}</span>
           </Link>
         </Button>
         <Button
@@ -249,77 +379,27 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
           size="sm"
           disabled={busy}
           onClick={() => void toggleShare()}
-          aria-label={thought.viewer.shared ? "Unshare" : "Share"}
-          className={cn("gap-1.5", thought.viewer.shared && "text-brand")}
+          aria-label={thought.viewer.shared ? "Unshare thought" : "Share thought"}
+          className={cn(
+            "gap-1.5 rounded-full px-3 text-ink-subtle transition-all hover:bg-success-soft hover:text-success-ink active:scale-95",
+            thought.viewer.shared && "bg-success-soft text-success-ink",
+          )}
         >
           <Share2
-            className={cn("h-4 w-4", thought.viewer.shared && "fill-current")}
+            className={cn("h-[18px] w-[18px]", thought.viewer.shared && "fill-current")}
             aria-hidden
           />
-          {thought.counts.shares}
+          <span className="text-[13px] font-semibold">{thought.counts.shares}</span>
         </Button>
-        <span className="flex-1" />
-        {isOwn ? (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={busy}
-              onClick={() => {
-                setEditBody(thought.body);
-                setEditing((current) => !current);
-              }}
-              aria-label="Edit"
-            >
-              <Pencil className="h-4 w-4" aria-hidden />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={busy}
-              onClick={() => void handleDelete()}
-              onBlur={() => setConfirmingDelete(false)}
-              aria-label={confirmingDelete ? "Confirm delete" : "Delete"}
-              className={cn(confirmingDelete && "text-danger-ink")}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-              {confirmingDelete ? "Sure?" : ""}
-            </Button>
-          </>
-        ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={() => void hide(thought.id)}
-          aria-label="Hide"
-        >
-          <EyeOff className="h-4 w-4" aria-hidden />
-        </Button>
-        {!isOwn ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={busy}
-            onClick={() => setReporting((current) => !current)}
-            aria-label="Report"
-          >
-            <Flag className="h-4 w-4" aria-hidden />
-          </Button>
-        ) : null}
       </div>
 
       {reporting && !reported ? (
-        <div className="mt-2 grid gap-2 rounded-xl bg-surface-muted p-2">
+        <div className="mt-3 grid gap-2 rounded-2xl bg-surface-muted p-3">
           <div className="flex items-center gap-2">
             <select
               value={reason}
               onChange={(event) => setReason(event.target.value)}
-              className="h-9 flex-1 rounded-lg border border-line bg-surface px-2 text-sm text-ink"
+              className="h-9 flex-1 rounded-full border border-line bg-surface px-3 text-sm text-ink"
               aria-label="Report reason"
             >
               {REPORT_REASONS.map((option) => (
@@ -333,6 +413,7 @@ export function ThoughtCard({ thought }: { thought: Thought }) {
               size="sm"
               disabled={busy}
               onClick={() => void submitReport()}
+              className="rounded-full"
             >
               Report
             </Button>

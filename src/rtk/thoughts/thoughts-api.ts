@@ -76,6 +76,18 @@ export const thoughtsApi = baseApi.injectEndpoints({
         normalizeThoughtPage(response),
       providesTags: ["Thoughts"],
     }),
+    connectionsThoughts: builder.query<ThoughtPage, { cursor?: string | null }>({
+      query: ({ cursor }) => {
+        const params = new URLSearchParams({ limit: "20" });
+        if (cursor) {
+          params.set("cursor", cursor);
+        }
+        return `/thoughts/connections?${params.toString()}`;
+      },
+      transformResponse: (response: unknown) =>
+        normalizeThoughtPage(response),
+      providesTags: ["Thoughts"],
+    }),
     thought: builder.query<Thought | null, string>({
       query: (id) => `/thoughts/${id}`,
       transformResponse: (response: unknown) => {
@@ -234,6 +246,8 @@ export const {
   useLazyMyThoughtsQuery,
   useThoughtsByUserQuery,
   useLazyThoughtsByUserQuery,
+  useConnectionsThoughtsQuery,
+  useLazyConnectionsThoughtsQuery,
   useThoughtQuery,
   useCreateThoughtMutation,
   useUpdateThoughtMutation,
@@ -279,6 +293,13 @@ export function useThoughtsByUser(
     publicUserId && enabled
       ? { publicUserId, cursor: null }
       : skipToken,
+  );
+}
+
+export function useConnectionsThoughts(enabled: boolean) {
+  return useConnectionsThoughtsQuery(
+    { cursor: null },
+    { skip: !enabled },
   );
 }
 

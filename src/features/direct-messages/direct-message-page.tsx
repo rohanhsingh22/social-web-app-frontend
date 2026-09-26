@@ -1,7 +1,7 @@
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuthSession } from "@/features/auth/api";
-import { Avatar } from "@/components/common/avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -37,12 +37,12 @@ export function DirectMessagePage({ conversationId }: { conversationId: string }
                 key={item}
                 className="flex items-start gap-3"
               >
-                <Avatar
+                <UserAvatar
                   user={{
-                    id: String(item),
                     username: "placeholder",
                     displayName: "User",
                   }}
+                  size={40}
                 />
                 <div className="space-y-2 rounded-xl bg-surface-muted p-3">
                   <Skeleton className="h-3 w-40" />

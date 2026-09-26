@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LogIn } from "lucide-react";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { HirotoliId } from "@/components/common/hirotoli-id";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { LockedPanel } from "@/components/common/locked-panel";
 import {
@@ -446,9 +447,9 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                       <button
                         type="button"
                         className="cursor-pointer rounded-full p-0 shadow-none outline-none focus-visible:ring-0"
-                        aria-label={`View @${item.sender.username}'s profile`}
+                        aria-label={`View ${item.sender.publicUserId ?? item.sender.username}'s profile`}
                       >
-                        <SenderAvatar sender={item.sender} size={40} />
+                        <UserAvatar user={item.sender} size={40} />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -458,13 +459,16 @@ export function ChatShell({ initialSlug }: { initialSlug?: string }) {
                       className="w-56 p-3"
                     >
                       <div className="flex items-center gap-3">
-                        <SenderAvatar sender={item.sender} size={48} />
+                        <UserAvatar user={item.sender} size={48} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-ink">
                             {item.sender.displayName}
                           </p>
                           <p className="truncate text-xs text-ink-subtle">
-                            @{item.sender.username}
+                            <HirotoliId
+                              publicUserId={item.sender.publicUserId}
+                              username={item.sender.username}
+                            />
                           </p>
                           {item.sender.toli ? (
                             <ToliBadge

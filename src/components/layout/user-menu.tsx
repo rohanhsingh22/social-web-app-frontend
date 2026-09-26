@@ -1,11 +1,10 @@
 import { LogOut, Moon, Sun, Settings } from "lucide-react";
-import { Avatar as AvatarPrimitive, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ToliAvatar } from "@/components/toli/toli-avatar";
-import { avatarColor } from "@/lib/channel-colors";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useAuthSession, useLogout } from "@/features/auth/api";
 import { useThemeMode } from "@/components/theme/theme-toggle";
+import { HirotoliId } from "@/components/common/hirotoli-id";
+import { UserAvatar } from "@/components/common/user-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,38 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { UserSummary } from "@/types/domain";
-
-function toliAvatarKeyOf(user: UserSummary): string | null {
-  return user.profilePicture?.type === "toli"
-    ? (user.profilePicture.toliAvatarKey ?? null)
-    : null;
-}
-
-function SquareAvatar({ user }: { user: UserSummary }) {
-  const color = avatarColor(user.displayName || user.username || user.id);
-  const toliKey = toliAvatarKeyOf(user);
-
-  if (toliKey) {
-    return (
-      <ToliAvatar
-        avatarKey={toliKey}
-        name={user.displayName}
-        size={48}
-        className="rounded-md text-sm"
-      />
-    );
-  }
-
-  return (
-    <AvatarPrimitive className="h-12 w-12 rounded-md">
-      <AvatarImage src={user.avatarUrl} alt={user.displayName} className="object-cover" />
-      <AvatarFallback className={cn("rounded-md font-semibold", color.bg, color.text)}>
-        {(user.displayName || "?").slice(0, 1).toUpperCase()}
-      </AvatarFallback>
-    </AvatarPrimitive>
-  );
-}
 
 export function UserMenu({ showName = false }: { showName?: boolean }) {
   const navigate = useNavigate();
@@ -73,21 +40,31 @@ export function UserMenu({ showName = false }: { showName?: boolean }) {
           )}
           aria-label="User menu"
         >
-          <AvatarTrigger user={user} />
+          <UserAvatar user={user} size={40} fallback="initial" />
           {showName ? (
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-ink">{user.displayName}</p>
-              <p className="truncate text-xs text-ink-subtle">@{user.username}</p>
+              <p className="truncate text-xs text-ink-subtle">
+                <HirotoliId
+                  publicUserId={user.publicUserId}
+                  username={user.username}
+                />
+              </p>
             </div>
           ) : null}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="right" sideOffset={12} className="w-56">
         <div className="flex items-center gap-3 p-2">
-          <SquareAvatar user={user} />
+          <UserAvatar user={user} size={48} fallback="initial" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink">{user.displayName}</p>
-            <p className="truncate text-xs text-ink-subtle">@{user.username}</p>
+            <p className="truncate text-xs text-ink-subtle">
+              <HirotoliId
+                publicUserId={user.publicUserId}
+                username={user.username}
+              />
+            </p>
           </div>
         </div>
         <DropdownMenuSeparator />
@@ -121,23 +98,5 @@ export function UserMenu({ showName = false }: { showName?: boolean }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-function AvatarTrigger({ user }: { user: UserSummary }) {
-  const color = avatarColor(user.displayName || user.username || user.id);
-  const toliKey = toliAvatarKeyOf(user);
-
-  if (toliKey) {
-    return <ToliAvatar avatarKey={toliKey} name={user.displayName} size={40} />;
-  }
-
-  return (
-    <AvatarPrimitive className="h-10 w-10 rounded-full">
-      <AvatarImage src={user.avatarUrl} alt={user.displayName} className="object-cover" />
-      <AvatarFallback className={cn("rounded-full font-semibold text-sm", color.bg, color.text)}>
-        {(user.displayName || "?").slice(0, 1).toUpperCase()}
-      </AvatarFallback>
-    </AvatarPrimitive>
   );
 }

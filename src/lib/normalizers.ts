@@ -501,8 +501,18 @@ export function normalizeSearchUser(value: unknown) {
 
   return {
     id: asString(record.id, "unknown"),
+    publicUserId: asOptionalString(
+      record.publicUserId ?? record.public_user_id ?? record.id,
+    ),
     profile: {
       username: asString(profile.username, "unknown"),
+      publicUserId: asOptionalString(
+        profile.publicUserId ??
+          profile.public_user_id ??
+          record.publicUserId ??
+          record.public_user_id ??
+          record.id,
+      ),
       displayName: asString(profile.displayName ?? profile.display_name, "Unknown user"),
       avatarUrl: asOptionalString(profile.avatarUrl ?? profile.avatar_url),
       profilePicture: normalizeProfilePicture(
@@ -524,6 +534,9 @@ function normalizeConnectionProfile(value: unknown): ConnectionProfile {
 
   return {
     username: asString(record.username, "unknown"),
+    publicUserId: asOptionalString(
+      record.publicUserId ?? record.public_user_id,
+    ),
     displayName: asString(record.displayName ?? record.display_name, "Unknown user"),
     avatarUrl: asOptionalString(record.avatarUrl ?? record.avatar_url),
     profilePicture: normalizeProfilePicture(
@@ -540,9 +553,16 @@ function normalizeConnectionProfile(value: unknown): ConnectionProfile {
 
 function normalizeConnectionUser(value: unknown): ConnectionUser {
   const record = isRecord(value) ? value : {};
+  const profileRecord = isRecord(record.profile) ? record.profile : {};
 
   return {
     id: asString(record.id, "unknown"),
+    publicUserId: asOptionalString(
+      record.publicUserId ??
+        record.public_user_id ??
+        profileRecord.publicUserId ??
+        profileRecord.public_user_id,
+    ),
     profile: isRecord(record.profile)
       ? normalizeConnectionProfile(record.profile)
       : null,

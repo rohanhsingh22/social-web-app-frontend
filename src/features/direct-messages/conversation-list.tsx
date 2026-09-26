@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DmConversation } from "@/types/domain";
@@ -66,7 +66,7 @@ export function ConversationList({
                 active && "bg-surface-hover",
               )}
             >
-              <SenderAvatar sender={profile} size={40} />
+              <UserAvatar user={profile} size={40} />
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 truncate font-semibold text-ink">
                   {displayName}

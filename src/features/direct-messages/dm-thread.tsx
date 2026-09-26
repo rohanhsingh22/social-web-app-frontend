@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SendHorizonal, AlertCircle, Flag, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ShowcaseAvatar } from "@/components/profile/showcase-avatar";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import {
   ReportDialog,
@@ -311,16 +310,15 @@ export function DmThread({ conversationId }: { conversationId: string }) {
         >
           ←
         </button>
-        {otherMember?.profile ? (
-          <SenderAvatar sender={otherMember.profile} size={40} />
-        ) : (
-          <ShowcaseAvatar
-            src={undefined}
-            alt={otherUserName}
-            width={40}
-            height={40}
-          />
-        )}
+        <UserAvatar
+          user={
+            otherMember?.profile ?? {
+              displayName: otherUserName,
+              avatarUrl: null,
+            }
+          }
+          size={40}
+        />
         <div className="min-w-0 flex-1">
           <h2 className="flex flex-wrap items-center gap-2 truncate text-base font-bold text-ink">
             {otherUserName}
@@ -509,7 +507,7 @@ function DmMessageRow({
       ].join(" ")}
     >
       {!isOwn && senderProfile ? (
-        <SenderAvatar sender={senderProfile} size={32} />
+        <UserAvatar user={senderProfile} size={32} />
       ) : !isOwn ? (
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-muted">
           ?

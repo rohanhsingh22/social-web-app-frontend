@@ -6,7 +6,7 @@ import {
   DEFAULT_CHARACTER_CONFIG,
   type CharacterConfig,
 } from "@/types/domain";
-import { Avatar } from "./avatar";
+import { CharacterAvatar } from "./avatar";
 
 function readThemeColor(token: string): string {
   if (typeof document === "undefined") {
@@ -194,7 +194,7 @@ export function CharacterScene({
 
         <Suspense fallback={null}>
           {characterConfigs.map((cfg, i) => (
-            <Avatar
+            <CharacterAvatar
               key={i}
               config={cfg}
               position={[(i * spacing) - totalWidth / 2, 0, 0]}

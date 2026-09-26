@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import {
   BadgeCheck,
   Ban,
@@ -11,7 +11,6 @@ import {
   Globe,
   Heart,
   Languages,
-  LogOut,
   MapPin,
   Palette,
   Pencil,
@@ -24,7 +23,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { LockedPanel } from "@/components/common/locked-panel";
 import { AppShell } from "@/components/layout/app-shell";
-import { useAuthSession, useLogout } from "@/features/auth/api";
+import { useAuthSession } from "@/features/auth/api";
 import { useMyProfile, usePublicProfile, useUpdateMyProfile } from "@/features/profile/api";
 import { useSearchUsersQuery } from "@/rtk/users/users-api";
 import {
@@ -62,10 +61,10 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
-import { Avatar } from "@/components/character/avatar";
+import { CharacterAvatar } from "@/components/character/avatar";
 import { Canvas } from "@react-three/fiber";
 import { UserThoughts } from "@/features/thoughts/user-thoughts";
-import { SenderAvatar } from "@/components/common/sender-avatar";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { resolveToliAvatarImage } from "@/lib/toli-avatar";
 import { cn } from "@/lib/utils";
@@ -185,6 +184,53 @@ function ChipList({ items, emptyText }: { items: string[]; emptyText: string }) 
   );
 }
 
+function EditSection({
+  step,
+  title,
+  description,
+  children,
+}: {
+  step: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand to-[#5B3FF5] text-xs font-black text-white shadow-md shadow-brand/25">
+          {step}
+        </span>
+        <div>
+          <h3 className="text-[15px] font-extrabold text-ink">{title}</h3>
+          <p className="text-xs text-ink-subtle">{description}</p>
+        </div>
+      </div>
+      <div className="grid gap-4">{children}</div>
+    </section>
+  );
+}
+
+function EditField({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Label className="grid gap-1.5">
+      <span className="text-[13px] font-bold text-ink">{label}</span>
+      {children}
+      {hint ? (
+        <span className="text-[11px] text-ink-subtle">{hint}</span>
+      ) : null}
+    </Label>
+  );
+}
+
 function formatFriendship(iso: string | null | undefined): string | null {
   if (!iso) {
     return null;
@@ -198,6 +244,70 @@ function formatFriendship(iso: string | null | undefined): string | null {
     return "Connected today";
   }
   return `Friends for ${days} day${days === 1 ? "" : "s"}`;
+}
+
+function normalizeList(value: string): string {
+  return value
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+    .join(",");
+}
+
+function isProfileFormDirty(
+  form: ProfileFormState,
+  profile: Profile,
+  config: CharacterConfig,
+): boolean {
+  if (form.displayName.trim() !== profile.displayName) {
+    return true;
+  }
+  if (form.username.trim() !== profile.username) {
+    return true;
+  }
+  if (form.bio.trim() !== (profile.bio ?? "").trim()) {
+    return true;
+  }
+  if (form.dob !== (profile.dob ?? "").slice(0, 10)) {
+    return true;
+  }
+  if (form.region !== (profile.region ?? "")) {
+    return true;
+  }
+  if (form.city !== (profile.city ?? "")) {
+    return true;
+  }
+  if (form.gender !== config.gender) {
+    return true;
+  }
+  if (
+    form.skinColor !==
+    (config.skinColor ?? DEFAULT_CHARACTER_CONFIG.skinColor)
+  ) {
+    return true;
+  }
+  if (
+    form.hairColor !==
+    (config.hairColor ?? DEFAULT_CHARACTER_CONFIG.hairColor)
+  ) {
+    return true;
+  }
+  if (
+    form.outfitColor !==
+    (config.outfitColor ?? DEFAULT_CHARACTER_CONFIG.outfitColor)
+  ) {
+    return true;
+  }
+  if (form.primaryLanguage !== (profile.primaryLanguage ?? "")) {
+    return true;
+  }
+  if (normalizeList(form.languages) !== normalizeList(profile.languages.join(","))) {
+    return true;
+  }
+  if (normalizeList(form.interests) !== normalizeList(profile.interests.join(","))) {
+    return true;
+  }
+  return false;
 }
 
 function toFormState(profile: Profile): ProfileFormState {
@@ -223,13 +333,21 @@ function toFormState(profile: Profile): ProfileFormState {
   };
 }
 
+type ProfileTab = "about" | "thoughts" | "avatar";
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { publicUserId } = useParams<{ publicUserId?: string }>();
-  const isOwnProfile = !publicUserId;
 
   const authQuery = useAuthSession();
   const isLoggedIn = Boolean(authQuery.data);
+  const sessionPublicId = authQuery.data?.user?.publicUserId;
+  // Own profile via /profile OR via your own /profile/:publicUserId link:
+  // either way there is never a Connect button for yourself.
+  const isOwnProfile =
+    !publicUserId ||
+    (Boolean(sessionPublicId) &&
+      publicUserId.toUpperCase() === sessionPublicId!.toUpperCase());
 
   const ownProfileQuery = useMyProfile(isLoggedIn && isOwnProfile);
   const publicProfileQuery = usePublicProfile(
@@ -238,13 +356,13 @@ export function ProfilePage() {
   );
   const profileQuery = isOwnProfile ? ownProfileQuery : publicProfileQuery;
   const updateProfile = useUpdateMyProfile();
-  const logout = useLogout();
 
   const profile = profileQuery.data ?? authQuery.data?.profile;
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ProfileFormState | null>(null);
   const [pictureOpen, setPictureOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState<ProfileTab>("about");
 
   const [savedTheme, setSavedTheme] = useState("System");
 
@@ -286,10 +404,9 @@ export function ProfilePage() {
     }
   }, []);
 
-  async function handleLogout() {
-    await logout.mutateAsync();
-    navigate("/");
-  }
+  useEffect(() => {
+    setProfileTab("about");
+  }, [publicUserId]);
 
   if (authQuery.isLoading) {
     return (
@@ -327,6 +444,10 @@ export function ProfilePage() {
   }
 
   const currentProfile = profile;
+  const effectiveConfig = getCharacterConfig(profile.characterConfig);
+  const formHasChanges = form
+    ? isProfileFormDirty(form, currentProfile, effectiveConfig)
+    : false;
   const toliPictureKey =
     currentProfile.profilePicture?.type === "toli"
       ? currentProfile.profilePicture.toliAvatarKey
@@ -384,27 +505,30 @@ export function ProfilePage() {
           PROFILE PAGE
           ============================================================ */}
 
-      <section className="h-full w-full overflow-hidden bg-background">
+      <section className="chat-scrollbar h-full w-full overflow-hidden bg-background lg:overflow-y-auto">
         <div className="h-full p-4 lg:p-6">
           <div className={cn("grid h-full min-h-0 grid-cols-1 gap-5", isOwnProfile ? "lg:grid-cols-[minmax(0,1fr)_420px]" : "lg:grid-cols-1")}>
             {/* ======================================================
                 LEFT / MAIN PROFILE
                 ====================================================== */}
 
-            <main className="min-h-0 overflow-hidden rounded-2xl border border-line bg-surface">
-              <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            <main className="rounded-[1.75rem] border border-line bg-surface/80 shadow-sm backdrop-blur">
+              <div className="flex flex-col">
                 {/* --------------------------------------------------
                     COVER
                     -------------------------------------------------- */}
 
-                <div className="relative h-47.5 shrink-0 overflow-hidden lg:h-55">
+                <div className="relative h-52 shrink-0 overflow-hidden rounded-t-[1.75rem] lg:h-60">
                   {/* Main gradient */}
                   <div className="absolute inset-0 bg-linear-to-br from-[#172b67] via-[#253c91] to-[#4b267d]" />
 
                   {/* Decorative glow */}
-                  <div className="absolute -left-20 -top-32 h-80 w-80 rounded-full bg-purple-500/30 blur-3xl" />
+                  <div className="orb-drift absolute -left-20 -top-32 h-80 w-80 rounded-full bg-purple-500/30 blur-3xl" />
 
-                  <div className="absolute -right-20 top-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl" />
+                  <div
+                    className="orb-drift absolute -right-20 top-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl"
+                    style={{ animationDelay: "-4s" }}
+                  />
 
                   <div className="absolute -bottom-40 left-[35%] h-80 w-80 rounded-full bg-indigo-500/30 blur-3xl" />
 
@@ -423,9 +547,9 @@ export function ProfilePage() {
                     PROFILE HEADER
                     -------------------------------------------------- */}
 
-                <div className="relative min-h-0 flex-1 px-5 pb-5 lg:px-7">
+                <div className="relative px-5 pb-5 lg:px-7">
                   {/* Avatar + Identity */}
-                  <div className="-mt-14 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="-mt-16 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div className="flex min-w-0 items-end gap-4">
                       {/* Avatar */}
                       <div className="relative shrink-0">
@@ -433,31 +557,33 @@ export function ProfilePage() {
                           type="button"
                           onClick={() => setPictureOpen(true)}
                           aria-label={`View ${currentProfile.displayName}'s profile picture`}
-                          className="cursor-pointer rounded-full bg-surface p-1 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand"
+                          className="cursor-pointer rounded-full bg-gradient-to-br from-brand via-[#5B3FF5] to-[#D94FE8] p-[3px] shadow-xl shadow-brand/20 outline-none transition hover:opacity-95 focus-visible:ring-2 focus-visible:ring-brand"
                         >
-                          <SenderAvatar
-                            sender={currentProfile}
-                            size={112}
-                          />
+                          <span className="block rounded-full bg-surface p-[3px]">
+                            <UserAvatar
+                              user={currentProfile}
+                              size={120}
+                            />
+                          </span>
                         </button>
 
                         {/* Online indicator */}
                         <span
-                          className="absolute bottom-2 right-2 h-4 w-4 rounded-full border-[3px] border-surface bg-emerald-500"
+                          className="absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-surface bg-emerald-500"
                           aria-label="Online"
                         />
                       </div>
 
                       {/* Name */}
                       <div className="min-w-0 pb-1">
-                        <div className="flex items-center gap-2">
-                          <h1 className="truncate text-2xl font-bold text-ink lg:text-3xl">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h1 className="truncate text-2xl font-extrabold tracking-tight text-ink lg:text-[32px]">
                             {currentProfile.displayName}
                           </h1>
 
                           {currentProfile.role &&
                           currentProfile.role !== "user" ? (
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2 py-1 text-[10px] font-semibold text-brand">
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2 py-1 text-[10px] font-bold text-brand">
                               <Shield className="h-3 w-3" />
                               {currentProfile.role}
                             </span>
@@ -471,29 +597,36 @@ export function ProfilePage() {
                           ) : null}
                         </div>
 
-                        <p className="mt-1 truncate text-sm text-ink-muted">
-                          @{currentProfile.username}
-                        </p>
-                        {currentProfile.publicUserId ? (
-                          <p className="mt-0.5 truncate font-mono text-xs text-ink-subtle">
-                            {currentProfile.publicUserId}
-                          </p>
-                        ) : null}
+                        <HirotoliIdCopy
+                          publicUserId={currentProfile.publicUserId}
+                          username={currentProfile.username}
+                          className="mt-1 text-sm"
+                        />
                       </div>
                     </div>
 
                     {isOwnProfile ? (
-                      <Button
-                        type="button"
-                        onClick={openEditor}
-                        className="shrink-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Edit Profile
-                      </Button>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          type="button"
+                          onClick={openEditor}
+                          className="rounded-full px-5 shadow-md shadow-brand/25"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit Profile
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => navigate("/settings")}
+                          className="rounded-full"
+                        >
+                          Settings
+                        </Button>
+                      </div>
                     ) : publicUserId ? (
                       <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-                        <ConnectionAction publicUserId={publicUserId} />
+                        <ConnectionWidget publicUserId={publicUserId} />
                         <ProfileSafetyRow
                           publicUserId={publicUserId}
                           username={currentProfile.username}
@@ -508,8 +641,8 @@ export function ProfilePage() {
 
                   <div className="mt-4 flex shrink-0 flex-wrap gap-2">
                     {currentProfile.region ? (
-                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted shadow-sm">
+                        <MapPin className="h-3.5 w-3.5 text-brand" />
                         {currentProfile.city
                           ? `${currentProfile.city}, ${currentProfile.region}`
                           : currentProfile.region}
@@ -517,57 +650,99 @@ export function ProfilePage() {
                     ) : null}
 
                     {currentProfile.ageGroup ? (
-                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
-                        <CalendarDays className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted shadow-sm">
+                        <CalendarDays className="h-3.5 w-3.5 text-brand" />
                         {currentProfile.ageGroup}
                       </div>
                     ) : null}
 
                     {currentProfile.gender ? (
-                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs capitalize text-ink-muted">
-                        <UserRound className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium capitalize text-ink-muted shadow-sm">
+                        <UserRound className="h-3.5 w-3.5 text-brand" />
                         {currentProfile.gender}
                       </div>
                     ) : null}
 
                     {formatDateOnly(currentProfile.dob) ? (
-                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
-                        <Cake className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted shadow-sm">
+                        <Cake className="h-3.5 w-3.5 text-brand" />
                         {formatDateOnly(currentProfile.dob)}
                       </div>
                     ) : null}
 
                     {currentProfile.primaryLanguage ? (
-                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
-                        <Globe className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted shadow-sm">
+                        <Globe className="h-3.5 w-3.5 text-brand" />
                         {currentProfile.primaryLanguage}
                       </div>
                     ) : null}
 
                     {formatMonthYear(currentProfile.createdAt) ? (
-                      <div className="flex items-center gap-2 rounded-full border border-line bg-background px-3 py-1.5 text-xs text-ink-muted">
-                        <Clock className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted shadow-sm">
+                        <Clock className="h-3.5 w-3.5 text-brand" />
                         Joined {formatMonthYear(currentProfile.createdAt)}
                       </div>
                     ) : null}
+                  </div>
+
+                  {/* Profile tabs */}
+                  <div className="mt-5 flex shrink-0 gap-1 overflow-x-auto border-b border-line [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Profile sections">
+                    {(
+                      [
+                        { id: "about", label: "About" },
+                        { id: "thoughts", label: "Thoughts" },
+                        ...((isOwnProfile || currentProfile.characterConfig)
+                          ? [{ id: "avatar", label: "Avatar" }]
+                          : []),
+                      ] as { id: ProfileTab; label: string }[]
+                    ).map((option) => {
+                      const selected = profileTab === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          role="tab"
+                          aria-selected={selected}
+                          type="button"
+                          onClick={() => setProfileTab(option.id)}
+                          className="relative shrink-0 px-4 py-3 text-[15px] outline-none transition-colors hover:bg-surface-hover/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand"
+                        >
+                          <span
+                            className={
+                              selected
+                                ? "font-bold text-ink"
+                                : "font-medium text-ink-muted"
+                            }
+                          >
+                            {option.label}
+                          </span>
+                          {selected ? (
+                            <span
+                              aria-hidden
+                              className="absolute inset-x-4 bottom-0 h-1 rounded-full bg-brand"
+                            />
+                          ) : null}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* ------------------------------------------------
                       CONTENT GRID
                       ------------------------------------------------ */}
 
-                  <div className="mt-4 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-                    {/* LEFT CONTENT */}
-                    <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
+                  <div key={profileTab} className="feed-item mt-4">
+                    {profileTab === "about" ? (
+                      <div className="grid gap-4">
                       {/* About Me */}
-                      <div className="shrink-0 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
+                      <div className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
                         <div className="mb-2 flex items-center gap-2">
-                          <UserRound className="h-4 w-4 text-brand" />
-
-                          <h2 className="font-semibold text-ink">About Me</h2>
+                          <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-soft text-brand-ink">
+                            <UserRound className="h-4 w-4" aria-hidden />
+                          </span>
+                          <h2 className="font-extrabold text-ink">About</h2>
                         </div>
 
-                        <p className="line-clamp-4 text-sm leading-6 text-ink-muted">
+                        <p className="text-sm leading-6 text-ink-muted">
                           {currentProfile.bio?.trim()
                             ? currentProfile.bio
                             : isOwnProfile
@@ -577,11 +752,12 @@ export function ProfilePage() {
                       </div>
 
                       {/* Languages */}
-                      <div className="shrink-0 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
-                        <div className="mb-2 flex items-center gap-2">
-                          <Languages className="h-4 w-4 text-brand" />
-
-                          <h2 className="font-semibold text-ink">Languages</h2>
+                      <div className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-soft text-brand-ink">
+                            <Languages className="h-4 w-4" aria-hidden />
+                          </span>
+                          <h2 className="font-extrabold text-ink">Languages</h2>
                         </div>
 
                         <ChipList
@@ -606,11 +782,12 @@ export function ProfilePage() {
                       </div>
 
                       {/* Interests */}
-                      <div className="shrink-0 rounded-xl border border-line bg-background/40 p-4 lg:p-5">
-                        <div className="mb-2 flex items-center gap-2">
-                          <Heart className="h-4 w-4 text-brand" />
-
-                          <h2 className="font-semibold text-ink">Interests</h2>
+                      <div className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm">
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-soft text-brand-ink">
+                            <Heart className="h-4 w-4" aria-hidden />
+                          </span>
+                          <h2 className="font-extrabold text-ink">Interests</h2>
                         </div>
 
                         <ChipList
@@ -623,29 +800,27 @@ export function ProfilePage() {
                         />
                       </div>
 
-                      {/* Thoughts of this user */}
+                      </div>
+                    ) : null}
+
+                    {profileTab === "thoughts" ? (
                       <UserThoughts
                         publicUserId={currentProfile.publicUserId}
                         isOwn={isOwnProfile}
                       />
-                    </div>
+                    ) : null}
 
-                    {/* CHARACTER — hidden on others' profiles when the owner
+                    {/* AVATAR — hidden on others' profiles when the owner
                         keeps it private (backend nulls it) or unset, rather
                         than showing a default mannequin. */}
-                    {isOwnProfile || currentProfile.characterConfig ? (
-                    <div className="min-h-0 overflow-hidden rounded-xl border border-line bg-background/40 p-4 lg:p-5">
-                      <div className="flex h-full min-h-0 flex-col">
-                        <div className="flex shrink-0 items-center justify-between">
-                          <h2 className="font-semibold text-ink">Character</h2>
-                        </div>
-
-                        {/* Character area */}
-                        <div className="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-lg bg-linear-to-b from-background/40 to-background">
-                          {/* Character glow */}
-                          <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-3xl" />
-
-                          {/* Character 3D scene */}
+                    {profileTab === "avatar" &&
+                    (isOwnProfile || currentProfile.characterConfig) ? (
+                      <div className="overflow-hidden rounded-[1.5rem] border border-line bg-surface shadow-sm">
+                        <div className="relative h-96 overflow-hidden bg-linear-to-b from-background to-surface-muted">
+                          <div
+                            aria-hidden
+                            className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-3xl"
+                          />
                           <div className="absolute inset-0">
                             <Canvas
                               camera={{ position: [0, 1.8, 4.5], fov: 40 }}
@@ -657,7 +832,7 @@ export function ProfilePage() {
                                 intensity={1.4}
                               />
                               <Suspense fallback={null}>
-                                <Avatar
+                                <CharacterAvatar
                                   config={getCharacterConfig(
                                     profile.characterConfig,
                                   )}
@@ -668,7 +843,6 @@ export function ProfilePage() {
                           </div>
                         </div>
                       </div>
-                    </div>
                     ) : null}
                   </div>
                 </div>
@@ -680,7 +854,7 @@ export function ProfilePage() {
                 ====================================================== */}
 
             {isOwnProfile ? (
-            <aside className="flex min-h-0 flex-col gap-4 overflow-hidden">
+            <aside className="flex flex-col gap-4">
               {/* --------------------------------------------------
                   PROFILE SETTINGS / DETAILS
                   -------------------------------------------------- */}
@@ -707,26 +881,23 @@ export function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* HiRotoli ID */}
+                  {/* HiRotoli ID (replaces the username row) */}
                   {currentProfile.publicUserId ? (
-                    <HiRotoliIdDisplay publicUserId={currentProfile.publicUserId} />
+                    <div className="flex items-center gap-2.5">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
+                        <UserRound className="h-4 w-4 text-ink-muted" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-ink">
+                          HiRotoli ID
+                        </p>
+                        <HirotoliIdCopy
+                          publicUserId={currentProfile.publicUserId}
+                          className="text-[11px]"
+                        />
+                      </div>
+                    </div>
                   ) : null}
-
-                  {/* Username */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
-                      <UserRound className="h-4 w-4 text-ink-muted" />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-ink">
-                        Username
-                      </p>
-                      <p className="truncate text-[11px] text-ink-muted">
-                        @{currentProfile.username}
-                      </p>
-                    </div>
-                  </div>
 
                   {/* Location */}
                   {currentProfile.region ? (
@@ -929,23 +1100,6 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              {/* --------------------------------------------------
-                  LOGOUT
-                  -------------------------------------------------- */}
-
-              {/* <div className="mt-auto shrink-0">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleLogout}
-                  disabled={logout.isPending}
-                  className="w-full"
-                >
-                  <LogOut className="h-4 w-4" />
-
-                  {logout.isPending ? "Logging out..." : "Log out"}
-                </Button>
-              </div> */}
             </aside>
             ) : null}
           </div>
@@ -993,291 +1147,339 @@ export function ProfilePage() {
 
       {isOwnProfile ? (
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Your profile</SheetTitle>
+        <SheetContent
+          side="right"
+          className="overflow-y-auto border-l border-line bg-background p-0 sm:max-w-md"
+        >
+          {/* Banner header */}
+          <div className="relative shrink-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#172b67] via-[#253c91] to-[#4b267d]" />
+            <div
+              aria-hidden
+              className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-purple-500/30 blur-3xl"
+            />
+            <div
+              aria-hidden
+              className="absolute -bottom-20 left-1/4 h-48 w-48 rounded-full bg-blue-400/25 blur-3xl"
+            />
+            <SheetHeader className="relative p-5 pr-16 pt-14 text-left">
+              <SheetTitle className="text-xl font-extrabold leading-snug text-white">
+                Edit profile
+              </SheetTitle>
+              <SheetDescription className="text-white/70">
+                Update how you appear across the app.
+              </SheetDescription>
+            </SheetHeader>
+          </div>
 
-            <SheetDescription>
-              Update how you appear across the app.
-            </SheetDescription>
-          </SheetHeader>
+          {/* Live identity preview */}
+          {form ? (
+            <div className="mt-4 shrink-0 px-4">
+              <div className="flex items-center gap-3 rounded-[1.5rem] border border-line bg-surface p-4 shadow-xl shadow-black/5">
+                <span
+                  className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-xl font-black text-white shadow-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${form.outfitColor}, #5B3FF5)`,
+                  }}
+                  aria-hidden
+                >
+                  {(form.displayName.trim().charAt(0) || "?").toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-extrabold text-ink">
+                    {form.displayName.trim() || "Your name"}
+                  </p>
+                  <p className="truncate font-mono text-xs text-ink-subtle">
+                    {currentProfile.publicUserId ??
+                      `@${form.username.trim() || currentProfile.username}`}
+                  </p>
+                </div>
+                <span
+                  className="h-6 w-6 shrink-0 rounded-full border-2 border-white shadow"
+                  style={{ backgroundColor: form.skinColor }}
+                  title="Skin tone preview"
+                />
+              </div>
+            </div>
+          ) : null}
 
           {form ? (
-            <form className="grid gap-4">
-              {/* Display name */}
-              <Label className="grid gap-2">
-                <span>Display name</span>
-
-                <Input
-                  value={form.displayName}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            displayName: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                />
-              </Label>
-
-              {/* Username */}
-              <Label className="grid gap-2">
-                <span>Username</span>
-
-                <Input
-                  value={form.username}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            username: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                />
-              </Label>
-
-              {/* Gender */}
-              <Label className="grid gap-2">
-                <span>Gender</span>
-
-                <Select
-                  value={form.gender}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            gender: event.target
-                              .value as CharacterConfig["gender"],
-                          }
-                        : current,
-                    )
-                  }
-                >
-                  {GENDER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-              </Label>
-
-              {/* Character colors */}
-              <div className="grid grid-cols-3 gap-3">
-                <Label className="grid gap-2">
-                  <span>Skin</span>
-
+            <form className="grid gap-4 p-4">
+              <EditSection
+                step="01"
+                title="Identity"
+                description="The name and handle people see."
+              >
+                <EditField label="Display name">
                   <Input
-                    type="color"
-                    value={form.skinColor}
+                    value={form.displayName}
                     onChange={(event) =>
                       setForm((current) =>
                         current
                           ? {
                               ...current,
-                              skinColor: event.target.value,
+                              displayName: event.target.value,
                             }
                           : current,
                       )
                     }
-                    className="h-10 cursor-pointer p-1"
+                    className="rounded-xl"
                   />
-                </Label>
+                </EditField>
 
-                <Label className="grid gap-2">
-                  <span>Hair</span>
-
+                <EditField
+                  label="Username"
+                  hint="Lowercase letters, numbers and underscores."
+                >
                   <Input
-                    type="color"
-                    value={form.hairColor}
+                    value={form.username}
                     onChange={(event) =>
                       setForm((current) =>
                         current
                           ? {
                               ...current,
-                              hairColor: event.target.value,
+                              username: event.target.value,
                             }
                           : current,
                       )
                     }
-                    className="h-10 cursor-pointer p-1"
+                    className="rounded-xl font-mono"
                   />
-                </Label>
+                </EditField>
 
-                <Label className="grid gap-2">
-                  <span>Outfit</span>
+                <EditField label="Gender">
+                  <div
+                    role="group"
+                    aria-label="Gender"
+                    className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-surface-muted/60 p-1.5"
+                  >
+                    {GENDER_OPTIONS.map((option) => {
+                      const selected = form.gender === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setForm((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    gender: option.value as CharacterConfig["gender"],
+                                  }
+                                : current,
+                            )
+                          }
+                          className={[
+                            "rounded-xl px-3 py-2.5 text-sm font-bold transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                            selected
+                              ? "bg-surface text-ink shadow-md"
+                              : "text-ink-subtle hover:text-ink",
+                          ].join(" ")}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </EditField>
+              </EditSection>
 
+              <EditSection
+                step="02"
+                title="Character colors"
+                description="Skin, hair and outfit for your 3D avatar."
+              >
+                <div className="grid grid-cols-3 gap-3">
+                  {(
+                    [
+                      { key: "skinColor", label: "Skin" },
+                      { key: "hairColor", label: "Hair" },
+                      { key: "outfitColor", label: "Outfit" },
+                    ] as const
+                  ).map((option) => (
+                    <Label key={option.key} className="grid gap-2">
+                      <span className="text-[13px] font-bold text-ink">
+                        {option.label}
+                      </span>
+                      <span
+                        className="grid h-16 place-items-center overflow-hidden rounded-2xl border border-line transition-transform hover:scale-[1.03]"
+                        style={{ backgroundColor: form[option.key] }}
+                      >
+                        <span className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white backdrop-blur-sm">
+                          {form[option.key]}
+                        </span>
+                      </span>
+                      <Input
+                        type="color"
+                        aria-label={`${option.label} color`}
+                        value={form[option.key]}
+                        onChange={(event) =>
+                          setForm((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  [option.key]: event.target.value,
+                                }
+                              : current,
+                          )
+                        }
+                        className="h-9 w-full cursor-pointer rounded-xl border-line p-1"
+                      />
+                    </Label>
+                  ))}
+                </div>
+              </EditSection>
+
+              <EditSection
+                step="03"
+                title="Details"
+                description="Age and where you are in the world."
+              >
+                <EditField label="Date of birth">
                   <Input
-                    type="color"
-                    value={form.outfitColor}
+                    type="date"
+                    value={form.dob}
                     onChange={(event) =>
                       setForm((current) =>
                         current
                           ? {
                               ...current,
-                              outfitColor: event.target.value,
+                              dob: event.target.value,
                             }
                           : current,
                       )
                     }
-                    className="h-10 cursor-pointer p-1"
+                    className="rounded-xl"
                   />
-                </Label>
-              </div>
+                </EditField>
 
-              {/* DOB */}
-              <Label className="grid gap-2">
-                <span>Date of birth</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <EditField label="Region">
+                    <Select
+                      value={form.region}
+                      onChange={(event) =>
+                        setForm((current) =>
+                          current
+                            ? {
+                                ...current,
+                                region: event.target.value,
+                              }
+                            : current,
+                        )
+                      }
+                    >
+                      <option value="">Not set</option>
 
-                <Input
-                  type="date"
-                  value={form.dob}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            dob: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                />
-              </Label>
+                      {REGION_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
+                  </EditField>
 
-              {/* Region */}
-              <Label className="grid gap-2">
-                <span>Region</span>
+                  <EditField label="City">
+                    <Select
+                      value={form.city}
+                      onChange={(event) =>
+                        setForm((current) =>
+                          current
+                            ? {
+                                ...current,
+                                city: event.target.value,
+                              }
+                            : current,
+                        )
+                      }
+                    >
+                      <option value="">Not set</option>
 
-                <Select
-                  value={form.region}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            region: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                >
-                  <option value="">Not set</option>
+                      {CITY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
+                  </EditField>
+                </div>
+              </EditSection>
 
-                  {REGION_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Label>
+              <EditSection
+                step="04"
+                title="Languages & interests"
+                description="Help people find common ground with you."
+              >
+                <EditField label="Primary language">
+                  <Select
+                    value={form.primaryLanguage}
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current
+                          ? {
+                              ...current,
+                              primaryLanguage: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                  >
+                    <option value="">Not set</option>
 
-              {/* City */}
-              <Label className="grid gap-2">
-                <span>City</span>
+                    {PRIMARY_LANGUAGE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </EditField>
 
-                <Select
-                  value={form.city}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            city: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                >
-                  <option value="">Not set</option>
+                <EditField label="Languages" hint="Comma separated">
+                  <Input
+                    value={form.languages}
+                    placeholder="English, Spanish"
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current
+                          ? {
+                              ...current,
+                              languages: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    className="rounded-xl"
+                  />
+                </EditField>
 
-                  {CITY_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Label>
+                <EditField label="Interests" hint="Comma separated">
+                  <Input
+                    value={form.interests}
+                    placeholder="Music, Gaming, Art"
+                    onChange={(event) =>
+                      setForm((current) =>
+                        current
+                          ? {
+                              ...current,
+                              interests: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    className="rounded-xl"
+                  />
+                </EditField>
+              </EditSection>
 
-              {/* Primary language */}
-              <Label className="grid gap-2">
-                <span>Primary language</span>
-
-                <Select
-                  value={form.primaryLanguage}
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            primaryLanguage: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                >
-                  <option value="">Not set</option>
-
-                  {PRIMARY_LANGUAGE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Label>
-
-              {/* Languages */}
-              <Label className="grid gap-2">
-                <span>Languages</span>
-
-                <Input
-                  value={form.languages}
-                  placeholder="English, Spanish"
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            languages: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                />
-              </Label>
-
-              {/* Interests */}
-              <Label className="grid gap-2">
-                <span>Interests</span>
-
-                <Input
-                  value={form.interests}
-                  placeholder="Music, Gaming, Art"
-                  onChange={(event) =>
-                    setForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            interests: event.target.value,
-                          }
-                        : current,
-                    )
-                  }
-                />
-              </Label>
-
-              {/* Bio */}
-              <Label className="grid gap-2">
-                <span>Bio</span>
-
+              <EditSection
+                step="05"
+                title="Bio"
+                description="A few lines about you."
+              >
                 <Textarea
                   value={form.bio}
+                  aria-label="Bio"
+                  placeholder="Tell people who you are..."
                   onChange={(event) =>
                     setForm((current) =>
                       current
@@ -1289,53 +1491,46 @@ export function ProfilePage() {
                     )
                   }
                   rows={4}
+                  className="rounded-2xl"
                 />
-              </Label>
+              </EditSection>
 
               {/* Error */}
               {updateProfile.isError ? (
-                <p className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger-ink">
+                <p className="rounded-2xl border border-danger bg-danger-soft p-3 text-sm font-medium text-danger-ink">
                   Could not save profile. Please check the fields and try again.
                 </p>
               ) : null}
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button
-                  type="button"
-                  onClick={saveProfile}
-                  disabled={updateProfile.isPending}
-                >
-                  {updateProfile.isPending ? "Saving..." : "Save changes"}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setOpen(false);
-                    setForm(null);
-                  }}
-                >
-                  Cancel
-                </Button>
+              {/* Sticky actions */}
+              <div className="sticky bottom-0 -mx-4 mt-2 border-t border-line bg-background/90 px-4 py-3 backdrop-blur-md">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(false);
+                      setForm(null);
+                    }}
+                    className="flex-1 rounded-full"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={saveProfile}
+                    disabled={updateProfile.isPending || !formHasChanges}
+                    title={formHasChanges ? undefined : "No changes to save"}
+                    className="flex-[2] rounded-full shadow-lg shadow-brand/25 disabled:shadow-none"
+                  >
+                    {updateProfile.isPending ? "Saving..." : "Save changes"}
+                  </Button>
+                </div>
               </div>
             </form>
           ) : null}
 
-          {/* Sheet logout */}
-          <div className="mt-6 border-t border-line pt-4">
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleLogout}
-              disabled={logout.isPending}
-            >
-              <LogOut className="h-4 w-4" />
-
-              {logout.isPending ? "Logging out..." : "Log out"}
-            </Button>
-          </div>
+          <div className="h-4" aria-hidden />
         </SheetContent>
       </Sheet>
       ) : null}
@@ -1343,7 +1538,54 @@ export function ProfilePage() {
   );
 }
 
-function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
+function HirotoliIdCopy({
+  publicUserId,
+  username,
+  className,
+}: {
+  publicUserId?: string | null;
+  username?: string | null;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const id = publicUserId ?? (username ? `@${username}` : null);
+
+  if (!id) {
+    return null;
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(id!);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard may be unavailable; ignore silently.
+    }
+  }
+
+  return (
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
+      <span className="truncate font-mono">{id}</span>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label="Copy HiRotoli ID"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-ink-subtle transition hover:bg-surface-hover hover:text-ink outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden />
+        ) : (
+          <Copy className="h-3.5 w-3.5" aria-hidden />
+        )}
+      </button>
+    </span>
+  );
+}
+
+// Connection states for OTHER users' profiles. Never renders for yourself:
+// callers gate on isOwnProfile and this double-checks the session identity.
+function ConnectionWidget({ publicUserId }: { publicUserId: string }) {
   // Like the connections lists, this polls lightly + refetches on mount:
   // the peer's actions (cancel/accept) arrive with no socket push yet.
   const searchQuery = useSearchUsersQuery(publicUserId, {
@@ -1355,6 +1597,12 @@ function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
   const [rejectRequest, rejectState] = useRejectRequestMutation();
   const [cancelRequest, cancelState] = useCancelRequestMutation();
   const [error, setError] = useState<string | null>(null);
+
+  const authQuery = useAuthSession();
+  const sessionPublicId = authQuery.data?.user?.publicUserId;
+  const isSelf =
+    Boolean(sessionPublicId) &&
+    publicUserId.toUpperCase() === sessionPublicId!.toUpperCase();
 
   const connection = searchQuery.data?.users[0]?.connection ?? null;
   const busy =
@@ -1383,6 +1631,12 @@ function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
 
   const loading = searchQuery.isLoading && !connection;
 
+  // Never show connection actions for yourself (e.g. opening your own
+  // /profile/:publicUserId link).
+  if (isSelf) {
+    return null;
+  }
+
   if (loading) {
     return (
       <Button type="button" variant="outline" disabled className="shrink-0">
@@ -1403,9 +1657,8 @@ function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
       <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
         <Button
           type="button"
-          variant="outline"
           disabled={busy}
-          className="border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+          className="rounded-full px-6 shadow-md shadow-brand/25"
           onClick={() =>
             void run(
               () => createRequest({ receiverUserId: publicUserId }).unwrap(),
@@ -1454,7 +1707,7 @@ function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
           <Button
             type="button"
             disabled={busy}
-            className="shrink-0"
+            className="shrink-0 rounded-full"
             onClick={() =>
               void run(
                 () => acceptRequest(connection.id).unwrap(),
@@ -1468,7 +1721,7 @@ function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
             type="button"
             variant="outline"
             disabled={busy}
-            className="shrink-0 border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+            className="shrink-0 rounded-full"
             onClick={() =>
               void run(
                 () => rejectRequest(connection.id).unwrap(),
@@ -1491,7 +1744,7 @@ function HiRotoliIdDisplay({ publicUserId }: { publicUserId: string }) {
 
   return (
     <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-muted px-3 py-1.5 text-xs font-semibold text-ink-muted">
         <Check className="h-4 w-4" aria-hidden />
         Request sent
       </span>
@@ -1593,40 +1846,4 @@ function ProfileSafetyRow({
   );
 }
 
-function ConnectionAction({ publicUserId }: { publicUserId: string }) {
-  const [copied, setCopied] = useState(false);
 
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(publicUserId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard may be unavailable; ignore silently.
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-background">
-        <UserRound className="h-4 w-4 text-ink-muted" />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-ink">HiRotoli ID</p>
-        <p className="truncate font-mono text-[11px] text-ink-muted">
-          {publicUserId}
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleCopy}
-        aria-label="Copy HiRotoli ID"
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-ink-muted transition hover:bg-surface-hover hover:text-ink"
-      >
-        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-      </button>
-    </div>
-  );
-}
