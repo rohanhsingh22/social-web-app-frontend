@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/page-header";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
-import { cn } from "@/lib/utils";
+import { NotificationRow } from "@/components/common/notification-row";
 import type { Notification } from "@/types/domain";
 
 function destinationFor(notification: Notification): string | null {
@@ -169,56 +169,15 @@ export function NotificationsPage() {
             />
           ) : null}
 
-          {items.map((notification) => {
-            const unread = !notification.readAt;
-            const destination = destinationFor(notification);
-            return (
-              <button
-                key={notification.id}
-                type="button"
-                onClick={() => void openNotification(notification)}
-                className={cn(
-                  "rounded-2xl border p-4 text-left transition-colors hover:bg-surface-hover",
-                  unread
-                    ? "border-brand bg-brand-soft/40"
-                    : "border-line bg-surface",
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {unread ? (
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full bg-brand"
-                      aria-label="Unread"
-                    />
-                  ) : null}
-                  <span className="flex-1 truncate text-sm font-semibold text-ink">
-                    {notification.title}
-                  </span>
-                </span>
-                {notification.body ? (
-                  <span className="mt-1 block break-words text-sm text-ink-muted">
-                    {notification.body}
-                  </span>
-                ) : null}
-                <span className="mt-1 block text-xs text-ink-subtle">
-                  {notification.createdAt
-                    ? new Intl.DateTimeFormat("en", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      }).format(new Date(notification.createdAt))
-                    : ""}
-                  {destination ? (
-                    <span>
-                      {" · "}
-                      <span className="font-medium text-brand">Open →</span>
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
+          {items.map((notification) => (
+            <NotificationRow
+              key={notification.id}
+              notification={notification}
+              unread={!notification.readAt}
+              onClick={() => void openNotification(notification)}
+              canNavigate={Boolean(destinationFor(notification))}
+            />
+          ))}
 
           {pageInfo?.hasMore ? (
             <Button

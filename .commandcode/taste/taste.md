@@ -1,4 +1,8 @@
-- Prefers dev-only/temporary features (e.g. a dev login flow) to be gated so they never appear in production builds, including disabling dev-only config (e.g. DEV_AUTH_ENABLED=false/unset) in production. Confidence: 0.85
+- Prefers conditional grid layouts that collapse to a single column when secondary/sidebar content is hidden for certain views (e.g., public vs. own profile), so the primary content fills the full available screen width instead of leaving an empty column. Confidence: 0.75
+
+- When asked to implement a feature, the user drives work from a structured design spec stored in `doc/` (e.g. `doc/complete-ui-design.txt`) that includes a canonical/shared-component catalog (sectioned appendices listing reusable components like PersonRow/NotificationRow), treating it as the implementation source of truth rather than ad-hoc requirements. Confidence: 0.8
+
+- Prefers to keep the project's `agent.md` reference doc in sync after significant migrations/refactors (updating stack, commands, env vars, directory map, routing conventions, and correcting stale details like renamed files or newly-wired modules) rather than leaving it describing the old architecture. Confidence: 0.7- Prefers dev-only/temporary features (e.g. a dev login flow) to be gated so they never appear in production builds, including disabling dev-only config (e.g. DEV_AUTH_ENABLED=false/unset) in production. Confidence: 0.85
 - Prefers a token-based theming system (light/dark modes plus accent colors) with semantic Tailwind classes like `bg-surface`/`text-ink`/`border-line`, and wants only those theme tokens used in Tailwind classes rather than hardcoded colors. Confidence: 0.9
 o clean up before launch. Confidence: 0.7
 - Prefers environment-configurable base URLs (separate REST vs realtime endpoints via `NEXT_PUBLIC_*`) so services can be pointed independently. Confidence: 0.6

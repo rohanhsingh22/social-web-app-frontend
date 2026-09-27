@@ -19,8 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HirotoliId } from "@/components/common/hirotoli-id";
-import { UserAvatar } from "@/components/common/user-avatar";
-import { ToliBadge } from "@/components/toli/toli-badge";
+import { PersonRow } from "@/components/common/person-row";
 import { PageHeader } from "@/components/common/page-header";
 import { EmptyState } from "@/components/common/empty-state";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
@@ -205,47 +204,42 @@ function ConnectionCard({ connection }: { connection: Connection }) {
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4">
-        {profile ? (
-          <UserAvatar user={profile} size={44} />
-        ) : (
-          <UserAvatar
-            user={{ displayName: "Unknown user", avatarUrl: undefined }}
-            size={44}
-          />
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
-            {displayName}
-            {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
-          </p>
-          <p className="truncate text-sm text-ink-muted">
+      <div className="rounded-2xl border border-line bg-surface p-4">
+        <PersonRow
+          user={profile ?? { displayName: "Unknown user" }}
+          avatarSize={44}
+          toliName={profile?.toli?.name ?? null}
+          secondary={
             <HirotoliId
               publicUserId={otherUser.publicUserId ?? profile?.publicUserId}
               username={profile?.username}
             />
-          </p>
-        </div>
-        <Button variant="outline" size="sm" disabled>
-          Connected
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="More actions">
-              <MoreVertical className="h-4 w-4" />
-              <span className="sr-only">More actions</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onSelect={() => setIsRemoveDialogOpen(true)}
-              disabled={removeState.isLoading}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          }
+          trailing={
+            <>
+              <Button variant="outline" size="sm" disabled>
+                Connected
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="More actions">
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">More actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => setIsRemoveDialogOpen(true)}
+                    disabled={removeState.isLoading}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          }
+        />
       </div>
 
       <ConfirmDialog
@@ -276,40 +270,33 @@ function ReceivedRequestCard({ request }: { request: ConnectionRequest }) {
   const isPending = acceptState.isLoading || rejectState.isLoading;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      {profile ? (
-        <UserAvatar user={profile} size={44} />
-      ) : (
-        <UserAvatar
-          user={{ displayName: "Unknown user", avatarUrl: undefined }}
-          size={44}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
-          {profile?.displayName ?? "Unknown user"}
-          {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
-        </p>
-        <p className="truncate text-sm text-ink-muted">
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <PersonRow
+        user={profile ?? { displayName: "Unknown user" }}
+        avatarSize={44}
+        toliName={profile?.toli?.name ?? null}
+        secondary={
           <HirotoliId
             publicUserId={otherUser.publicUserId ?? profile?.publicUserId}
             username={profile?.username}
           />
-        </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Button size="sm" disabled={isPending} onClick={() => void accept(request.id)}>
-          {acceptState.isLoading ? "Accepting…" : "Accept"}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() => void reject(request.id)}
-        >
-          {rejectState.isLoading ? "Rejecting…" : "Reject"}
-        </Button>
-      </div>
+        }
+        trailing={
+          <>
+            <Button size="sm" disabled={isPending} onClick={() => void accept(request.id)}>
+              {acceptState.isLoading ? "Accepting…" : "Accept"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => void reject(request.id)}
+            >
+              {rejectState.isLoading ? "Rejecting…" : "Reject"}
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
@@ -320,36 +307,31 @@ function SentRequestCard({ request }: { request: ConnectionRequest }) {
   const profile = otherUser.profile;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      {profile ? (
-        <UserAvatar user={profile} size={44} />
-      ) : (
-        <UserAvatar
-          user={{ displayName: "Unknown user", avatarUrl: undefined }}
-          size={44}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
-          {profile?.displayName ?? "Unknown user"}
-          {profile?.toli ? <ToliBadge name={profile.toli.name} /> : null}
-        </p>
-        <p className="truncate text-sm text-ink-muted">
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <PersonRow
+        user={profile ?? { displayName: "Unknown user" }}
+        avatarSize={44}
+        toliName={profile?.toli?.name ?? null}
+        secondary={
           <HirotoliId
             publicUserId={otherUser.publicUserId ?? profile?.publicUserId}
             username={profile?.username}
           />
-        </p>
-        <p className="text-xs text-ink-subtle">Pending</p>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={cancelState.isLoading}
-        onClick={() => void cancel(request.id)}
-      >
-        {cancelState.isLoading ? "Cancelling…" : "Cancel"}
-      </Button>
+        }
+        trailing={
+          <>
+            <p className="text-xs text-ink-subtle">Pending</p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={cancelState.isLoading}
+              onClick={() => void cancel(request.id)}
+            >
+              {cancelState.isLoading ? "Cancelling…" : "Cancel"}
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
@@ -442,41 +424,36 @@ function UserResultCard({
   const connection = user.connection;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4">
-      <UserAvatar user={user.profile} size={44} />
-      <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-2 truncate font-semibold text-ink">
-          {user.profile.displayName}
-          {user.profile.toli ? (
-            <ToliBadge name={user.profile.toli.name} />
-          ) : null}
-        </p>
-        <p className="truncate text-sm text-ink-muted">
-          <HirotoliId
-            publicUserId={user.publicUserId ?? user.id}
-            username={user.profile.username}
-          />
-        </p>
-      </div>
-      {connection?.status === "accepted" ? (
-        <Button variant="outline" size="sm" disabled>
-          Connected
-        </Button>
-      ) : connection?.status === "pending" &&
-        connection.direction === "sent" ? (
-        <Button variant="outline" size="sm" disabled>
-          Requested
-        </Button>
-      ) : connection?.status === "pending" &&
-        connection.direction === "received" ? (
-        <Button variant="outline" size="sm" disabled>
-          Respond
-        </Button>
-      ) : (
-        <Button size="sm" onClick={onConnect} disabled={isConnecting}>
-          {isConnecting ? "Sending…" : "Connect"}
-        </Button>
-      )}
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <PersonRow
+        user={user.profile}
+        avatarSize={44}
+        toliName={user.profile.toli?.name ?? null}
+        secondary={
+          <HirotoliId publicUserId={user.publicUserId ?? user.id} username={user.profile.username} />
+        }
+        trailing={
+          connection?.status === "accepted" ? (
+            <Button variant="outline" size="sm" disabled>
+              Connected
+            </Button>
+          ) : connection?.status === "pending" &&
+            connection.direction === "sent" ? (
+            <Button variant="outline" size="sm" disabled>
+              Requested
+            </Button>
+          ) : connection?.status === "pending" &&
+            connection.direction === "received" ? (
+            <Button variant="outline" size="sm" disabled>
+              Respond
+            </Button>
+          ) : (
+            <Button size="sm" onClick={onConnect} disabled={isConnecting}>
+              {isConnecting ? "Sending…" : "Connect"}
+            </Button>
+          )
+        }
+      />
     </div>
   );
 }
