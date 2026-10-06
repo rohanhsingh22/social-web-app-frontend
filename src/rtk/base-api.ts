@@ -68,6 +68,8 @@ export const baseApi = createApi({
     "Notifications",
     "Blocks",
     "Reports",
+    "Home",
+    "HomeConnections",
   ],
   endpoints: () => ({}),
 });

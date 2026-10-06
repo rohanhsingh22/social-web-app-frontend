@@ -12,6 +12,18 @@ import type {
   ConnectionRequest,
   ConnectionProfile,
   ConnectionUser,
+  HomeConnection,
+  HomeConnectionState,
+  HomeInvitation,
+  HomeInvitationStatus,
+  HomeJoinRequest,
+  HomeJoinRequestStatus,
+  HomeMember,
+  HomeMemberRole,
+  HomePresence,
+  HomeState,
+  HomeVoiceToken,
+  LeaveHomeResult,
   Notification,
   NotificationsPage,
   PageInfo,
@@ -785,5 +797,201 @@ export function normalizeDmMessagePage(
       normalizeDirectMessage,
     ),
     pageInfo: normalizePageInfo(record),
+  };
+}
+
+function normalizeHomeRole(value: unknown): HomeMemberRole {
+  return value === "OWNER" ? "OWNER" : "PARTICIPANT";
+}
+
+function normalizeHomePresence(value: unknown): HomePresence {
+  return value === "online" ? "online" : "offline";
+}
+
+function normalizeHomeCharacterConfig(value: unknown): CharacterConfig | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return normalizeCharacterConfig(value);
+}
+
+function normalizeDateString(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return "";
+}
+
+export function normalizeHomeMember(value: unknown): HomeMember {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+
+  return {
+    userId: asString(record.userId ?? record.user_id, ""),
+    publicUserId:
+      asOptionalString(record.publicUserId ?? record.public_user_id) ?? null,
+    displayName: asString(
+      record.displayName ?? record.display_name,
+      "Someone",
+    ),
+    role: normalizeHomeRole(record.role),
+    presence: normalizeHomePresence(record.presence),
+    characterConfig: normalizeHomeCharacterConfig(
+      record.characterConfig ?? record.character_config,
+    ),
+    joinedAt: normalizeDateString(record.joinedAt ?? record.joined_at),
+  };
+}
+
+export function normalizeHomeState(value: unknown): HomeState | null {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+  const home = isRecord(record.home) ? record.home : null;
+
+  // The backend returns `{ home: null }` when the user has no shared Home.
+  if (!home) {
+    return null;
+  }
+
+  const members = Array.isArray(home.members) ? home.members : [];
+
+  return {
+    id: asString(home.id, ""),
+    ownerId: asString(home.ownerId ?? home.owner_id, ""),
+    memberCount: asNumber(home.memberCount ?? home.member_count, members.length),
+    members: members.map(normalizeHomeMember),
+  };
+}
+
+function normalizeHomeConnectionState(value: unknown): HomeConnectionState {
+  return value === "MY_HOME" ||
+    value === "OTHER_HOME" ||
+    value === "OFFLINE" ||
+    value === "AVAILABLE"
+    ? value
+    : "AVAILABLE";
+}
+
+export function normalizeHomeConnection(value: unknown): HomeConnection {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+  const memberCount =
+    record.homeMemberCount ?? record.home_member_count ?? null;
+
+  return {
+    userId: asString(record.userId ?? record.user_id, ""),
+    publicUserId:
+      asOptionalString(record.publicUserId ?? record.public_user_id) ?? null,
+    displayName: asString(
+      record.displayName ?? record.display_name,
+      "Someone",
+    ),
+    characterConfig: normalizeHomeCharacterConfig(
+      record.characterConfig ?? record.character_config,
+    ),
+    presence: normalizeHomePresence(record.presence),
+    homeState: normalizeHomeConnectionState(
+      record.homeState ?? record.home_state,
+    ),
+    homeMemberCount:
+      typeof memberCount === "number" && Number.isFinite(memberCount)
+        ? memberCount
+        : null,
+  };
+}
+
+export function normalizeHomeConnections(value: unknown): HomeConnection[] {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+
+  return pickArray(record, ["connections", "items", "data"]).map(
+    normalizeHomeConnection,
+  );
+}
+
+function normalizeHomeInvitationStatus(value: unknown): HomeInvitationStatus {
+  return value === "ACCEPTED" ||
+    value === "REJECTED" ||
+    value === "EXPIRED" ||
+    value === "CANCELLED" ||
+    value === "PENDING"
+    ? value
+    : "PENDING";
+}
+
+export function normalizeHomeInvitation(value: unknown): HomeInvitation {
+  const payload = pickRecord(value, ["data"]);
+  const root = isRecord(payload) ? payload : {};
+  const record = isRecord(root.invitation) ? root.invitation : root;
+
+  return {
+    id: asString(record.id, ""),
+    homeId: asString(record.homeId ?? record.home_id, ""),
+    inviterId: asString(record.inviterId ?? record.inviter_id, ""),
+    inviteeId: asString(record.inviteeId ?? record.invitee_id, ""),
+    status: normalizeHomeInvitationStatus(record.status),
+    expiresAt: normalizeDateString(record.expiresAt ?? record.expires_at),
+    respondedAt:
+      asOptionalString(record.respondedAt ?? record.responded_at) ?? null,
+  };
+}
+
+function normalizeHomeJoinRequestStatus(
+  value: unknown,
+): HomeJoinRequestStatus {
+  return value === "ACCEPTED" ||
+    value === "REJECTED" ||
+    value === "EXPIRED" ||
+    value === "PENDING"
+    ? value
+    : "PENDING";
+}
+
+export function normalizeHomeJoinRequest(value: unknown): HomeJoinRequest {
+  const payload = pickRecord(value, ["data"]);
+  const root = isRecord(payload) ? payload : {};
+  const raw = root.joinRequest ?? root.join_request;
+  const record = isRecord(raw) ? raw : root;
+
+  return {
+    id: asString(record.id, ""),
+    homeId: asString(record.homeId ?? record.home_id, ""),
+    requesterId: asString(record.requesterId ?? record.requester_id, ""),
+    targetMemberId: asString(
+      record.targetMemberId ?? record.target_member_id,
+      "",
+    ),
+    status: normalizeHomeJoinRequestStatus(record.status),
+    expiresAt: normalizeDateString(record.expiresAt ?? record.expires_at),
+    respondedAt:
+      asOptionalString(record.respondedAt ?? record.responded_at) ?? null,
+  };
+}
+
+export function normalizeHomeVoiceToken(value: unknown): HomeVoiceToken {
+  const payload = pickRecord(value, ["data"]);
+  const root = isRecord(payload) ? payload : {};
+  const record = isRecord(root.voiceToken) ? root.voiceToken : root;
+
+  return {
+    token: asString(record.token, ""),
+    serverUrl: asString(record.serverUrl ?? record.server_url, ""),
+    expiresAt: normalizeDateString(record.expiresAt ?? record.expires_at),
+  };
+}
+
+export function normalizeLeaveHomeResult(value: unknown): LeaveHomeResult {
+  const payload = pickRecord(value, ["data"]);
+  const record = isRecord(payload) ? payload : {};
+  const removed = record.removedUserIds ?? record.removed_user_ids;
+
+  return {
+    homeId: asString(record.homeId ?? record.home_id, ""),
+    userId: asOptionalString(record.userId ?? record.user_id),
+    removedUserIds: Array.isArray(removed)
+      ? removed.filter((id): id is string => typeof id === "string")
+      : undefined,
   };
 }

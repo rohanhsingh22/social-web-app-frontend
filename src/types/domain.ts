@@ -324,3 +324,90 @@ export type AuthSession = {
   user: UserSummary;
   profile?: Profile;
 };
+
+// Hirotoli Home (Phase 9). Server state only — live voice/session state
+// stays in React context/hooks, dialogs in local component state (#95).
+export type HomeMemberRole = "OWNER" | "PARTICIPANT";
+
+export type HomePresence = "online" | "offline";
+
+export type HomeConnectionState =
+  | "AVAILABLE"
+  | "OFFLINE"
+  | "MY_HOME"
+  | "OTHER_HOME";
+
+export type HomeMember = {
+  userId: string;
+  publicUserId: string | null;
+  displayName: string;
+  role: HomeMemberRole;
+  presence: HomePresence;
+  // Null when the member never set a character — the renderer shows a
+  // placeholder. Home-only by design; never add this to generic social
+  // surfaces (backend spec #36).
+  characterConfig: CharacterConfig | null;
+  joinedAt: string;
+};
+
+export type HomeState = {
+  id: string;
+  ownerId: string;
+  memberCount: number;
+  members: HomeMember[];
+};
+
+export type HomeConnection = {
+  userId: string;
+  publicUserId: string | null;
+  displayName: string;
+  characterConfig: CharacterConfig | null;
+  presence: HomePresence;
+  homeState: HomeConnectionState;
+  homeMemberCount: number | null;
+};
+
+export type HomeInvitationStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "CANCELLED";
+
+export type HomeInvitation = {
+  id: string;
+  homeId: string;
+  inviterId: string;
+  inviteeId: string;
+  status: HomeInvitationStatus;
+  expiresAt: string;
+  respondedAt?: string | null;
+};
+
+export type HomeJoinRequestStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "EXPIRED";
+
+export type HomeJoinRequest = {
+  id: string;
+  homeId: string;
+  requesterId: string;
+  targetMemberId: string;
+  status: HomeJoinRequestStatus;
+  expiresAt: string;
+  respondedAt?: string | null;
+};
+
+export type HomeVoiceToken = {
+  token: string;
+  serverUrl: string;
+  expiresAt: string;
+};
+
+export type LeaveHomeResult = {
+  homeId: string;
+  userId?: string;
+  removedUserIds?: string[];
+};

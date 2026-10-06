@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeAuthSession,
   normalizeChannelMessagePage,
+  normalizeHomeConnection,
+  normalizeHomeConnections,
+  normalizeHomeInvitation,
+  normalizeHomeJoinRequest,
+  normalizeHomeState,
+  normalizeHomeVoiceToken,
   normalizeProfilePicture,
   normalizeSearchUsers,
   normalizeThoughtPage,
@@ -168,5 +174,160 @@ describe("resolveToliAvatarImage", () => {
   it("returns null for unknown keys", () => {
     expect(resolveToliAvatarImage("nope_99")).toBeNull();
     expect(resolveToliAvatarImage(null)).toBeNull();
+  });
+});
+
+describe("normalizeHomeState", () => {
+  it("returns null when the user has no shared Home", () => {
+    expect(normalizeHomeState({ data: { home: null } })).toBeNull();
+    expect(normalizeHomeState({ data: {} })).toBeNull();
+    expect(normalizeHomeState(null)).toBeNull();
+  });
+
+  it("normalizes members with presence and character config", () => {
+    const state = normalizeHomeState({
+      data: {
+        home: {
+          id: "home-a",
+          ownerId: "owner-1",
+          memberCount: 2,
+          members: [
+            {
+              userId: "owner-1",
+              publicUserId: "HT-OWNER001",
+              displayName: "Owner",
+              role: "OWNER",
+              presence: "online",
+              characterConfig: { gender: "female" },
+              joinedAt: "2026-10-05T00:00:00.000Z",
+            },
+            {
+              userId: "user-2",
+              displayName: "Guest",
+              role: "BOSS",
+              presence: "away",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(state?.memberCount).toBe(2);
+    expect(state?.members[0]).toEqual(
+      expect.objectContaining({
+        userId: "owner-1",
+        role: "OWNER",
+        presence: "online",
+        characterConfig: expect.objectContaining({ gender: "female" }),
+      }),
+    );
+    // Unknown role/presence fall back; missing character stays null.
+    expect(state?.members[1]).toEqual(
+      expect.objectContaining({
+        role: "PARTICIPANT",
+        presence: "offline",
+        characterConfig: null,
+      }),
+    );
+  });
+});
+
+describe("normalizeHomeConnections", () => {
+  it("classifies AVAILABLE, MY_HOME, and OTHER_HOME", () => {
+    const connections = normalizeHomeConnections({
+      data: {
+        connections: [
+          { userId: "free-1", displayName: "Free", homeState: "AVAILABLE" },
+          { userId: "mate-1", displayName: "Mate", homeState: "MY_HOME" },
+          {
+            userId: "busy-1",
+            displayName: "Busy",
+            homeState: "OTHER_HOME",
+            homeMemberCount: 3,
+          },
+          { userId: "weird-1", homeState: "SOMEWHERE" },
+        ],
+      },
+    });
+
+    expect(connections.map((c) => c.homeState)).toEqual([
+      "AVAILABLE",
+      "MY_HOME",
+      "OTHER_HOME",
+      "AVAILABLE",
+    ]);
+    expect(connections[2]?.homeMemberCount).toBe(3);
+    expect(connections[0]?.homeMemberCount).toBeNull();
+  });
+});
+
+describe("normalizeHomeInvitation", () => {
+  it("unwraps the invitation envelope", () => {
+    const invitation = normalizeHomeInvitation({
+      data: {
+        invitation: {
+          id: "invite-1",
+          homeId: "home-a",
+          inviterId: "user-1",
+          inviteeId: "user-2",
+          status: "PENDING",
+          expiresAt: "2026-10-05T00:00:20.000Z",
+        },
+      },
+    });
+
+    expect(invitation).toEqual(
+      expect.objectContaining({ id: "invite-1", status: "PENDING" }),
+    );
+  });
+});
+
+describe("normalizeHomeJoinRequest", () => {
+  it("unwraps the join-request envelope", () => {
+    const request = normalizeHomeJoinRequest({
+      data: {
+        joinRequest: {
+          id: "request-1",
+          homeId: "home-b",
+          requesterId: "user-3",
+          targetMemberId: "user-4",
+          status: "PENDING",
+          expiresAt: "2026-10-05T00:00:20.000Z",
+        },
+      },
+    });
+
+    expect(request).toEqual(
+      expect.objectContaining({
+        id: "request-1",
+        targetMemberId: "user-4",
+      }),
+    );
+  });
+});
+
+describe("normalizeHomeVoiceToken", () => {
+  it("keeps token, server URL, and expiry", () => {
+    expect(
+      normalizeHomeVoiceToken({
+        data: {
+          token: "jwt",
+          serverUrl: "wss://livekit.example",
+          expiresAt: "2026-10-05T01:00:00.000Z",
+        },
+      }),
+    ).toEqual({
+      token: "jwt",
+      serverUrl: "wss://livekit.example",
+      expiresAt: "2026-10-05T01:00:00.000Z",
+    });
+  });
+});
+
+describe("normalizeHomeConnection", () => {
+  it("defaults unknown states to AVAILABLE", () => {
+    expect(normalizeHomeConnection({ userId: "u1" }).homeState).toBe(
+      "AVAILABLE",
+    );
   });
 });

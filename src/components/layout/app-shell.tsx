@@ -10,6 +10,7 @@ import { useChannels } from "@/features/channels/api";
 import { useAuthSession } from "@/features/auth/api";
 import { useMyToliChannel } from "@/features/toli/api";
 import { useNotificationsSocket } from "@/features/notifications/use-notifications-socket";
+import { HomeOverlays } from "@/features/home/home-overlays";
 import { NotificationBellIcon } from "@/features/notifications/notification-bell";
 
 const navItems = [
@@ -111,6 +112,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="min-h-dvh pb-16 lg:h-full lg:overflow-hidden lg:pb-0 lg:pl-64">{children}</main>
+
+      <HomeOverlays />
 
       <nav
         className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-7 border-t border-line bg-surface/90 pb-safe backdrop-blur lg:hidden"
