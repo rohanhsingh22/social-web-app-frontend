@@ -36,7 +36,11 @@ export function CharacterModel({
     const root = cloneSkinnedScene(gltf.scene);
     const box = new Box3().setFromObject(root);
     const center = box.getCenter(new Vector3());
-    root.position.set(-center.x, -center.y, -center.z);
+    // Center horizontally but ground the feet: the GLBs already stand on
+    // y=0 (bounds y 0..~1.87), so shifting by -center.y buries half the
+    // body below the platform. Resting box.min.y on y=0 keeps every stage
+    // (Home, picker, showcase) correct.
+    root.position.set(-center.x, -box.min.y, -center.z);
     applyCharacterMaterials(root, {
       ...DEFAULT_CHARACTER_CONFIG,
       ...config,

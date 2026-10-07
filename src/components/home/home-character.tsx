@@ -1,10 +1,10 @@
 import { Html } from "@react-three/drei";
 import { DEFAULT_CHARACTER_CONFIG, type HomeMember } from "@/types/domain";
-import { CharacterModel } from "@/components/character/character-model";
+import { CharacterRenderer } from "@/components/character/CharacterRenderer";
 import { HomeCharacterLabel } from "./home-character-label";
 import type { CharacterPosition } from "./home-character-layout";
 
-// One Home occupant (spec #114): HomeMember + CharacterModel + identity
+// One Home occupant (spec #114): HomeMember + CharacterRenderer + identity
 // label + presence dimming + speaking glow. Knows nothing about invitations,
 // APIs, sockets, or the voice provider — voice state arrives as a boolean.
 export function HomeCharacter({
@@ -22,9 +22,11 @@ export function HomeCharacter({
 
   return (
     <group position={position} scale={[scale, scale, scale]}>
-      <CharacterModel
+      <CharacterRenderer
+        character={member.character ?? null}
         config={member.characterConfig ?? DEFAULT_CHARACTER_CONFIG}
         opacity={offline ? 0.45 : 1}
+        animation={speaking && !offline ? "wave" : "idle"}
       />
       {speaking && !offline && (
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>

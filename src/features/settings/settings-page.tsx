@@ -52,6 +52,13 @@ import {
   useSelectToliMutation,
 } from "@/features/toli/api";
 import { useUpdateProfilePictureMutation } from "@/rtk/profile/profile-api";
+import {
+  useCharactersQuery,
+  useMyCharacterQuery,
+  useSaveCharacterMutation,
+} from "@/rtk/character/character-api";
+import { CharacterPicker } from "@/features/character/character-picker";
+import { WardrobePicker } from "@/features/character/wardrobe-picker";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { ToliPicker } from "@/features/toli/toli-picker";
 import {
@@ -90,6 +97,7 @@ import {
 
 type SectionId =
   | "appearance"
+  | "character"
   | "toli"
   | "privacy"
   | "account";
@@ -136,6 +144,12 @@ const settingSections: {
     label: "Display",
     description: "Theme & accent",
     icon: Palette,
+  },
+  {
+    id: "character",
+    label: "Character",
+    description: "3D home identity",
+    icon: Sparkles,
   },
   {
     id: "toli",
@@ -481,6 +495,93 @@ function VisibilityItem({
 /* =========================================================
    TOLI SECTION
 ========================================================= */
+
+function CharacterSettingsSection() {
+  const catalogQuery = useCharactersQuery();
+  const selectionQuery = useMyCharacterQuery();
+  const [save, saveState] = useSaveCharacterMutation();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const selectedId = selectionQuery.data?.character.definition.id ?? null;
+  const loadout = selectionQuery.data?.character.loadout as
+    | Record<string, unknown>
+    | undefined;
+
+  const select = async (characterId: string) => {
+    if (characterId === selectedId) {
+      return;
+    }
+    setPendingId(characterId);
+    try {
+      await save({ characterId }).unwrap();
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <SectionHeader
+        eyebrow="Home identity"
+        title="Character"
+        description="Your personal 3D Home character — not your profile picture. Two free characters at launch."
+        icon={Sparkles}
+      />
+      <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
+        <CardContent className="p-5">
+          {catalogQuery.isLoading || selectionQuery.isLoading ? (
+            <p className="text-sm text-ink-subtle">Loading characters…</p>
+          ) : catalogQuery.isError || !catalogQuery.data ? (
+            <p className="text-sm text-ink-subtle" role="alert">
+              Couldn&apos;t load characters.{" "}
+              <button
+                type="button"
+                className="font-semibold text-brand hover:underline"
+                onClick={() => {
+                  catalogQuery.refetch();
+                  selectionQuery.refetch();
+                }}
+              >
+                Try again
+              </button>
+            </p>
+          ) : (
+            <CharacterPicker
+              characters={catalogQuery.data}
+              selectedId={selectedId}
+              loadout={loadout}
+              pendingId={pendingId ?? (saveState.isLoading ? selectedId : null)}
+              onSelect={(id) => void select(id)}
+            />
+          )}
+          {saveState.isError && (
+            <p className="mt-3 text-xs text-red-500" role="alert">
+              Couldn&apos;t save your character. Please try again.
+            </p>
+          )}
+          {selectionQuery.data && (
+            <p className="mt-3 text-xs text-ink-subtle">
+              Event Coins: {selectionQuery.data.eventCoins} · Owned:{" "}
+              {selectionQuery.data.ownedCharacterIds.join(", ") || "—"}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      <Card className="rounded-2xl border-line bg-surface/80 shadow-sm backdrop-blur">
+        <CardHeader className="px-5 pb-2 pt-5">
+          <h3 className="text-[15px] font-extrabold text-ink">Wardrobe</h3>
+          <p className="text-xs text-ink-subtle">
+            Supported slots render on Home. Event cosmetics stay owned after
+            events end.
+          </p>
+        </CardHeader>
+        <CardContent className="px-5 pb-6 pt-2">
+          <WardrobePicker />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function ToliSettingsSection() {
   const profileQuery = useMyProfile(true);
@@ -1248,6 +1349,8 @@ export function SettingsPage() {
                     </Card>
                   </div>
                 )}
+
+                {activeSection === "character" && <CharacterSettingsSection />}
 
                 {activeSection === "toli" && <ToliSettingsSection />}
 

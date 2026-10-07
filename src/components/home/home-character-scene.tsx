@@ -1,5 +1,4 @@
-import { ContactShadows, OrbitControls } from "@react-three/drei";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Component,
   Suspense,
@@ -15,27 +14,52 @@ import { getHomeCamera, type HomeCamera } from "./home-character-camera";
 import { getHomeCharacterLayout } from "./home-character-layout";
 import { HomeCharacterLoading } from "./home-character-loading";
 import { isWebGLSupported } from "./home-webgl";
+import { HomeWorld } from "./HomeWorld";
+import { HomeAmbientAudio } from "./HomeAmbientAudio";
+import { HomePerfProbe } from "./HomePerfProbe";
+import { defaultWorldForColorMode } from "./HomeThemeResolver";
+import type { HomeWorldTheme } from "./home-world-types";
+import {
+  useAccentColor,
+  usePrefersReducedMotion,
+  useTabVisible,
+  useUiColorMode,
+} from "./use-home-stage-prefs";
 
-// The Canvas `camera` prop only seeds the default camera on mount — it does
-// NOT track later renders. Without this rig the camera stays frozen at the
-// solo framing while the layout spreads for 2–4 members, pushing everyone
-// except the owner out of frame (their HTML labels still show, which is
-// exactly the reported symptom).
-function CameraRig({ camera }: { camera: HomeCamera }) {
+// Cinematic lobby camera: the Canvas `camera` prop only seeds the default
+// camera on mount — it does NOT track later renders, so this rig owns the
+// framing (member-count changes re-seat it). Like a BGMI lobby, the camera
+// never orbits: it holds a fixed cinematic frame with an ultra-slow drift
+// so the screen feels alive while only the characters truly move. Drift
+// pauses under reduced-motion.
+function CameraRig({
+  camera,
+  drift = true,
+}: {
+  camera: HomeCamera;
+  drift?: boolean;
+}) {
   const rawCamera = useThree((s) => s.camera);
-  const controls = useThree((s) => s.controls) as unknown as {
-    target: { set: (x: number, y: number, z: number) => void };
-    update: () => void;
-  } | null;
 
   useEffect(() => {
     const perspective = rawCamera as PerspectiveCamera;
     perspective.position.set(...camera.position);
     perspective.fov = camera.fov;
     perspective.updateProjectionMatrix();
-    controls?.target.set(...camera.target);
-    controls?.update();
-  }, [rawCamera, controls, camera]);
+    perspective.lookAt(...camera.target);
+  }, [rawCamera, camera]);
+
+  useFrame(({ clock }) => {
+    if (!drift) {
+      return;
+    }
+    const t = clock.elapsedTime;
+    const perspective = rawCamera as PerspectiveCamera;
+    // ±0.15 units over ~60s — perceptible life, no motion sickness.
+    perspective.position.x = camera.position[0] + Math.sin(t * 0.1) * 0.15;
+    perspective.position.y = camera.position[1] + Math.sin(t * 0.13 + 1) * 0.06;
+    perspective.lookAt(...camera.target);
+  });
 
   return null;
 }
@@ -119,10 +143,14 @@ export function HomeCharacterScene({
   members,
   speakingIds = [],
   interactive = true,
+  worldTheme,
+  accentColor,
 }: {
   members: HomeMember[];
   speakingIds?: string[];
   interactive?: boolean;
+  worldTheme?: HomeWorldTheme;
+  accentColor?: string;
 }) {
   const compact = useCompactStage();
   // Duplicate identities collapse React keys and stack models at one slot.
@@ -141,6 +169,11 @@ export function HomeCharacterScene({
   const layout = getHomeCharacterLayout(uniqueMembers.length, { compact });
   const camera = getHomeCamera(uniqueMembers.length, { compact });
   const speaking = new Set(speakingIds);
+  const reducedMotion = usePrefersReducedMotion();
+  const tabVisible = useTabVisible();
+  const liveAccent = useAccentColor();
+  const accent = accentColor ?? liveAccent;
+  const colorMode = useUiColorMode();
   // Deterministic fallback: context-creation failures (disabled GPU,
   // sandboxed software GL) don't reliably reach the boundary below.
   const [webgl] = useState(isWebGLSupported);
@@ -149,66 +182,62 @@ export function HomeCharacterScene({
     return <HomeStageFallback members={members} />;
   }
 
+  // Explicit (server/event) themes always win; otherwise the default
+  // world follows the UI light/dark mode live.
+  const theme = worldTheme ?? defaultWorldForColorMode(colorMode);
+
+  // Cinematic vignette: cheap CSS radial overlay (no postprocessing GPU
+  // cost) that frames the scene like a game lobby in both modes.
+  const vignette =
+    colorMode === "light"
+      ? "radial-gradient(ellipse at center, transparent 55%, rgba(30,41,59,0.22) 100%)"
+      : "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%)";
+
   return (
     <HomeCharacterErrorBoundary members={members}>
-      <div className="relative h-full min-h-[420px] overflow-hidden">
+      {/* isolate: keeps 3D DOM overlays (labels, vignette) in a local
+          stacking context so they can never cover page chrome. */}
+      <div
+        className={`relative isolate h-full overflow-hidden ${compact ? "min-h-[320px]" : "min-h-[480px]"}`}
+      >
         <Canvas
           shadows
           camera={{ position: camera.position, fov: camera.fov }}
           dpr={compact ? [1, 1.5] : [1, 2]}
+          frameloop={tabVisible ? "always" : "never"}
         >
-          <ambientLight intensity={0.5} />
-          <directionalLight
-            position={[4, 8, 5]}
-            intensity={1.6}
-            color="#ffffff"
-            castShadow
-            shadow-mapSize={[1024, 1024]}
-            shadow-bias={-0.0004}
-          />
-          <directionalLight position={[-4, 5, -3]} intensity={0.5} />
-          {/* Ground stage shared by all characters */}
-          <mesh receiveShadow position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[4.2, 48]} />
-            <meshStandardMaterial color="#141627" roughness={0.9} />
-          </mesh>
-          <Suspense fallback={null}>
-            {uniqueMembers.map((member, index) => (
-              <HomeCharacter
-                key={member.userId}
-                member={member}
-                position={
-                  layout.positions[index] ?? ([0, 0, 0] as [number, number, number])
-                }
-                scale={layout.scale}
-                speaking={speaking.has(member.userId)}
-              />
-            ))}
-          </Suspense>
-          <ContactShadows
-            position={[0, 0.01, 0]}
-            scale={10}
-            blur={2.5}
-            opacity={0.55}
-            far={4}
-            color="#000000"
-          />
-          {interactive && (
-            <OrbitControls
-              makeDefault
-              enablePan={false}
-              enableZoom
-              enableRotate
-              minPolarAngle={Math.PI / 2.4}
-              maxPolarAngle={Math.PI / 2}
-              minDistance={camera.minDistance}
-              maxDistance={camera.maxDistance}
-              target={camera.target}
-            />
-          )}
-          <CameraRig camera={camera} />
+          <HomeWorld
+            theme={theme}
+            accentColor={accent}
+            reducedMotion={reducedMotion}
+            compact={compact}
+          >
+            <Suspense fallback={null}>
+              {uniqueMembers.map((member, index) => (
+                <HomeCharacter
+                  key={member.userId}
+                  member={member}
+                  position={
+                    layout.positions[index] ?? ([0, 0, 0] as [number, number, number])
+                  }
+                  scale={layout.scale}
+                  speaking={speaking.has(member.userId)}
+                />
+              ))}
+            </Suspense>
+          </HomeWorld>
+          {/* Fixed lobby camera: drift only (no orbiting) when interactive,
+              fully static under reduced-motion. */}
+          <CameraRig camera={camera} drift={interactive && !reducedMotion} />
+          {import.meta.env.DEV && <HomePerfProbe />}
         </Canvas>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: vignette }}
+        />
         <HomeCharacterLoading />
+        <HomeAmbientAudio theme={theme} />
       </div>
     </HomeCharacterErrorBoundary>
   );

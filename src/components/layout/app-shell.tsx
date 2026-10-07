@@ -45,7 +45,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh bg-background text-ink lg:h-dvh lg:overflow-hidden">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-surface lg:flex lg:flex-col">
+      {/* z-30: app chrome always sits above 3D DOM overlays (drei <Html>
+          labels render up to z-10 with no local stacking context). */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-surface lg:flex lg:flex-col">
         <div className="flex h-16 items-center gap-2 px-4">
           <img
             src={logoLight}

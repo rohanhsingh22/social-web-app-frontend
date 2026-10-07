@@ -824,6 +824,24 @@ function normalizeDateString(value: unknown): string {
   return "";
 }
 
+function normalizeHomeMemberCharacter(
+  value: unknown,
+): HomeMember["character"] {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const definitionId = asOptionalString(
+    value.definitionId ?? value.definition_id,
+  );
+  if (!definitionId) {
+    return null;
+  }
+  const loadout = isRecord(value.loadout)
+    ? (value.loadout as Record<string, unknown>)
+    : undefined;
+  return { definitionId, loadout };
+}
+
 export function normalizeHomeMember(value: unknown): HomeMember {
   const payload = pickRecord(value, ["data"]);
   const record = isRecord(payload) ? payload : {};
@@ -841,6 +859,7 @@ export function normalizeHomeMember(value: unknown): HomeMember {
     characterConfig: normalizeHomeCharacterConfig(
       record.characterConfig ?? record.character_config,
     ),
+    character: normalizeHomeMemberCharacter(record.character),
     joinedAt: normalizeDateString(record.joinedAt ?? record.joined_at),
   };
 }
@@ -891,6 +910,7 @@ export function normalizeHomeConnection(value: unknown): HomeConnection {
     characterConfig: normalizeHomeCharacterConfig(
       record.characterConfig ?? record.character_config,
     ),
+    character: normalizeHomeMemberCharacter(record.character),
     presence: normalizeHomePresence(record.presence),
     homeState: normalizeHomeConnectionState(
       record.homeState ?? record.home_state,

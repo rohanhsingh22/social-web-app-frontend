@@ -337,6 +337,11 @@ export type HomeConnectionState =
   | "MY_HOME"
   | "OTHER_HOME";
 
+export type HomeMemberCharacter = {
+  definitionId: string;
+  loadout?: Record<string, unknown>;
+};
+
 export type HomeMember = {
   userId: string;
   publicUserId: string | null;
@@ -347,6 +352,9 @@ export type HomeMember = {
   // placeholder. Home-only by design; never add this to generic social
   // surfaces (backend spec #36).
   characterConfig: CharacterConfig | null;
+  // New validated shape (additive): frontend prefers this when present,
+  // falls back to characterConfig for legacy members.
+  character?: HomeMemberCharacter | null;
   joinedAt: string;
 };
 
@@ -362,6 +370,7 @@ export type HomeConnection = {
   publicUserId: string | null;
   displayName: string;
   characterConfig: CharacterConfig | null;
+  character?: HomeMemberCharacter | null;
   presence: HomePresence;
   homeState: HomeConnectionState;
   homeMemberCount: number | null;

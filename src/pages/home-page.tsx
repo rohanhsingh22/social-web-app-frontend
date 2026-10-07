@@ -14,8 +14,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToliBadge } from "@/components/toli/toli-badge";
 import { useAuthSession } from "@/features/auth/api";
 import { useHome } from "@/features/home/use-home";
+import { useHomeWorldQuery } from "@/rtk/character/character-api";
 import { useMyToliChannel } from "@/features/toli/api";
 import type { HomeMember } from "@/types/domain";
+import type { HomeWorldTheme } from "@/components/home/home-world-types";
 
 const HomeStage = lazy(() =>
   import("@/components/home/home-character-scene").then((m) => ({
@@ -25,15 +27,29 @@ const HomeStage = lazy(() =>
 
 // Shared Home: voice session wraps the speaking stage + controls. Solo
 // visitors render the stage alone — no mic, no room.
-function SharedHomeStage({ members, homeId }: { members: HomeMember[]; homeId: string }) {
+function SharedHomeStage({
+  members,
+  homeId,
+  worldTheme,
+}: {
+  members: HomeMember[];
+  homeId: string;
+  worldTheme?: HomeWorldTheme;
+}) {
   return (
     <HomeVoiceProvider homeId={homeId}>
-      <VoiceStage members={members} />
+      <VoiceStage members={members} worldTheme={worldTheme} />
     </HomeVoiceProvider>
   );
 }
 
-function VoiceStage({ members }: { members: HomeMember[] }) {
+function VoiceStage({
+  members,
+  worldTheme,
+}: {
+  members: HomeMember[];
+  worldTheme?: HomeWorldTheme;
+}) {
   const { speakingIds } = useHomeVoiceContext();
 
   return (
@@ -46,7 +62,11 @@ function VoiceStage({ members }: { members: HomeMember[] }) {
             </div>
           }
         >
-          <HomeStage members={members} speakingIds={speakingIds} />
+          <HomeStage
+            members={members}
+            speakingIds={speakingIds}
+            worldTheme={worldTheme}
+          />
         </Suspense>
       </div>
       <HomeControls />
@@ -63,6 +83,14 @@ export default function HomePage() {
   // HomeOverlays mount in AppShell (invitation overlay included).
   const homeQuery = useHome();
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  // Server-driven Home world: only event layers override the stage —
+  // otherwise the built-in default follows the UI light/dark mode live.
+  // (The stage never blocks on the theme fetch.)
+  const worldQuery = useHomeWorldQuery(undefined, { skip: !isLoggedIn });
+  const worldTheme =
+    worldQuery.data && worldQuery.data.activeLayers.length > 0
+      ? worldQuery.data.theme
+      : undefined;
   // Gate on the nested ref or the scalar id (session shapes vary).
   const hasToli = Boolean(profile?.toli ?? profile?.toliId);
   const toliName = profile?.toli?.name;
@@ -178,7 +206,11 @@ export default function HomePage() {
             </div>
           </div>
         ) : homeQuery.home ? (
-          <SharedHomeStage members={members} homeId={homeQuery.home.id} />
+          <SharedHomeStage
+            members={members}
+            homeId={homeQuery.home.id}
+            worldTheme={worldTheme}
+          />
         ) : (
           <Suspense
             fallback={
@@ -187,7 +219,7 @@ export default function HomePage() {
               </div>
             }
           >
-            <HomeStage members={members} />
+            <HomeStage members={members} worldTheme={worldTheme} />
           </Suspense>
         )}
         <HomeConnectionsDialog

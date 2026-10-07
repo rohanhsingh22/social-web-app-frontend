@@ -197,7 +197,8 @@ export function CharacterScene({
             <CharacterAvatar
               key={i}
               config={cfg}
-              position={[(i * spacing) - totalWidth / 2, 0, 0]}
+              // Feet rest on the pedestal top (platform surface y=0.06).
+              position={[(i * spacing) - totalWidth / 2, 0.07, 0]}
               scale={charScale}
             />
           ))}

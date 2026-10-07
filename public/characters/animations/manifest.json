@@ -1,0 +1,1 @@
+{"animations":["idle","wave","happy","sad","celebrate","interaction-ready"],"mode":"procedural","clips":{"idle":null,"wave":null,"happy":null,"sad":null,"celebrate":null,"interaction-ready":null},"notes":"GLB clips plug in here per animation without touching CharacterRenderer."}

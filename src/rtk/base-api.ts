@@ -70,6 +70,8 @@ export const baseApi = createApi({
     "Reports",
     "Home",
     "HomeConnections",
+    "Characters",
+    "HomeWorld",
   ],
   endpoints: () => ({}),
 });
