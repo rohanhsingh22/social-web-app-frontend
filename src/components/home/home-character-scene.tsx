@@ -16,8 +16,9 @@ import { HomeCharacterLoading } from "./home-character-loading";
 import { isWebGLSupported } from "./home-webgl";
 import { HomeWorld } from "./HomeWorld";
 import { HomeAmbientAudio } from "./HomeAmbientAudio";
+import { HomeIdentityCard } from "./home-identity-card";
 import { HomePerfProbe } from "./HomePerfProbe";
-import { defaultWorldForColorMode } from "./HomeThemeResolver";
+import { defaultHomeWorld } from "./HomeThemeResolver";
 import type { HomeWorldTheme } from "./home-world-types";
 import {
   useAccentColor,
@@ -26,12 +27,12 @@ import {
   useUiColorMode,
 } from "./use-home-stage-prefs";
 
-// Cinematic lobby camera: the Canvas `camera` prop only seeds the default
+// Village camera: the Canvas `camera` prop only seeds the default
 // camera on mount — it does NOT track later renders, so this rig owns the
-// framing (member-count changes re-seat it). Like a BGMI lobby, the camera
-// never orbits: it holds a fixed cinematic frame with an ultra-slow drift
-// so the screen feels alive while only the characters truly move. Drift
-// pauses under reduced-motion.
+// framing (member-count changes re-seat it). The camera never orbits: it
+// holds a fixed cinematic frame over the village stage with an ultra-slow
+// drift so the screen feels alive while only the characters truly move.
+// Drift pauses under reduced-motion.
 function CameraRig({
   camera,
   drift = true,
@@ -177,14 +178,19 @@ export function HomeCharacterScene({
   // Deterministic fallback: context-creation failures (disabled GPU,
   // sandboxed software GL) don't reliably reach the boundary below.
   const [webgl] = useState(isWebGLSupported);
+  // Identity card selection (spec §22): click/tap a character.
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const selectedMember =
+    uniqueMembers.find((m) => m.userId === selectedUserId) ?? null;
 
   if (!webgl) {
     return <HomeStageFallback members={members} />;
   }
 
-  // Explicit (server/event) themes always win; otherwise the default
-  // world follows the UI light/dark mode live.
-  const theme = worldTheme ?? defaultWorldForColorMode(colorMode);
+  // Explicit (server/event) themes always win; otherwise the permanent
+  // Hirotoli Village renders — UI light/dark mode never changes the 3D
+  // world (spec §19), it only styles CSS/UI chrome.
+  const theme = worldTheme ?? defaultHomeWorld();
 
   // Cinematic vignette: cheap CSS radial overlay (no postprocessing GPU
   // cost) that frames the scene like a game lobby in both modes.
@@ -222,11 +228,12 @@ export function HomeCharacterScene({
                   }
                   scale={layout.scale}
                   speaking={speaking.has(member.userId)}
+                  onSelect={(selected) => setSelectedUserId(selected.userId)}
                 />
               ))}
             </Suspense>
           </HomeWorld>
-          {/* Fixed lobby camera: drift only (no orbiting) when interactive,
+          {/* Fixed village camera: drift only (no orbiting) when interactive,
               fully static under reduced-motion. */}
           <CameraRig camera={camera} drift={interactive && !reducedMotion} />
           {import.meta.env.DEV && <HomePerfProbe />}
@@ -238,6 +245,17 @@ export function HomeCharacterScene({
         />
         <HomeCharacterLoading />
         <HomeAmbientAudio theme={theme} />
+        {selectedMember && (
+          <HomeIdentityCard
+            member={selectedMember}
+            open={selectedMember !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedUserId(null);
+              }
+            }}
+          />
+        )}
       </div>
     </HomeCharacterErrorBoundary>
   );

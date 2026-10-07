@@ -6,6 +6,7 @@ import {
   normalizeHomeConnections,
   normalizeHomeInvitation,
   normalizeHomeJoinRequest,
+  normalizeHomeMember,
   normalizeHomeState,
   normalizeHomeVoiceToken,
   normalizeProfilePicture,
@@ -329,5 +330,53 @@ describe("normalizeHomeConnection", () => {
     expect(normalizeHomeConnection({ userId: "u1" }).homeState).toBe(
       "AVAILABLE",
     );
+  });
+
+  it("carries the authoritative connection status for the identity card", () => {
+    expect(
+      normalizeHomeConnection({ userId: "u1", connectionStatus: "connected" })
+        .connectionStatus,
+    ).toBe("connected");
+    expect(
+      normalizeHomeConnection({ userId: "u1" }).connectionStatus,
+    ).toBeUndefined();
+  });
+});
+
+describe("normalizeHomeMember identity signals", () => {
+  it("carries isOwner/isSelf/connectionStatus through (camel + snake)", () => {
+    expect(
+      normalizeHomeMember({
+        userId: "u1",
+        isOwner: true,
+        isSelf: false,
+        connectionStatus: "connected",
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        isOwner: true,
+        isSelf: false,
+        connectionStatus: "connected",
+      }),
+    );
+    expect(
+      normalizeHomeMember({
+        userId: "u1",
+        is_owner: true,
+        is_self: true,
+        connection_status: "request_received",
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        isOwner: true,
+        isSelf: true,
+        connectionStatus: "request_received",
+      }),
+    );
+  });
+
+  it("leaves signals absent on legacy payloads (card falls back)", () => {
+    expect(normalizeHomeMember({ userId: "u1" }).connectionStatus).toBeUndefined();
+    expect(normalizeHomeMember({ userId: "u1" }).isSelf).toBeUndefined();
   });
 });

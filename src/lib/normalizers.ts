@@ -845,6 +845,8 @@ function normalizeHomeMemberCharacter(
 export function normalizeHomeMember(value: unknown): HomeMember {
   const payload = pickRecord(value, ["data"]);
   const record = isRecord(payload) ? payload : {};
+  const isOwner = record.isOwner ?? record.is_owner;
+  const isSelf = record.isSelf ?? record.is_self;
 
   return {
     userId: asString(record.userId ?? record.user_id, ""),
@@ -855,6 +857,15 @@ export function normalizeHomeMember(value: unknown): HomeMember {
       "Someone",
     ),
     role: normalizeHomeRole(record.role),
+    // Server-authoritative identity signals (spec §22) — carried through
+    // when present so the identity card never degrades to "Add Connection"
+    // for connected members. Absent on legacy payloads (card falls back).
+    isOwner: typeof isOwner === "boolean" ? isOwner : undefined,
+    isSelf: typeof isSelf === "boolean" ? isSelf : undefined,
+    connectionStatus:
+      asOptionalString(
+        record.connectionStatus ?? record.connection_status,
+      ) ?? undefined,
     presence: normalizeHomePresence(record.presence),
     characterConfig: normalizeHomeCharacterConfig(
       record.characterConfig ?? record.character_config,
@@ -915,6 +926,11 @@ export function normalizeHomeConnection(value: unknown): HomeConnection {
     homeState: normalizeHomeConnectionState(
       record.homeState ?? record.home_state,
     ),
+    // Authoritative relationship state for the identity card (spec §22).
+    connectionStatus:
+      asOptionalString(
+        record.connectionStatus ?? record.connection_status,
+      ) ?? undefined,
     homeMemberCount:
       typeof memberCount === "number" && Number.isFinite(memberCount)
         ? memberCount

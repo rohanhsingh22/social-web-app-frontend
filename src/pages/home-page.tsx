@@ -18,6 +18,7 @@ import { useHomeWorldQuery } from "@/rtk/character/character-api";
 import { useMyToliChannel } from "@/features/toli/api";
 import type { HomeMember } from "@/types/domain";
 import type { HomeWorldTheme } from "@/components/home/home-world-types";
+import { resolveServerTheme } from "@/components/home/HomeThemeResolver";
 
 const HomeStage = lazy(() =>
   import("@/components/home/home-character-scene").then((m) => ({
@@ -83,14 +84,12 @@ export default function HomePage() {
   // HomeOverlays mount in AppShell (invitation overlay included).
   const homeQuery = useHome();
   const [connectionsOpen, setConnectionsOpen] = useState(false);
-  // Server-driven Home world: only event layers override the stage —
-  // otherwise the built-in default follows the UI light/dark mode live.
-  // (The stage never blocks on the theme fetch.)
+  // Server-authoritative Home world (spec §20): the server-resolved theme
+  // wins whenever its shape validates; otherwise the permanent village
+  // resolves locally from active layers. UI light/dark never affects the 3D
+  // world (§19). The stage never blocks on the theme fetch.
   const worldQuery = useHomeWorldQuery(undefined, { skip: !isLoggedIn });
-  const worldTheme =
-    worldQuery.data && worldQuery.data.activeLayers.length > 0
-      ? worldQuery.data.theme
-      : undefined;
+  const worldTheme = resolveServerTheme(worldQuery.data ?? null);
   // Gate on the nested ref or the scalar id (session shapes vary).
   const hasToli = Boolean(profile?.toli ?? profile?.toliId);
   const toliName = profile?.toli?.name;
@@ -135,6 +134,9 @@ export default function HomePage() {
             displayName: profile?.displayName ?? "You",
             role: "OWNER" as const,
             presence: "online" as const,
+            isSelf: true,
+            isOwner: false,
+            connectionStatus: "self",
             characterConfig: profile?.characterConfig ?? null,
             joinedAt: new Date().toISOString(),
           },

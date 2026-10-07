@@ -16,12 +16,10 @@ export function HomeAtmosphere({
   compact?: boolean;
 }) {
   const fog = theme.atmosphere.fog;
-  const sparkles = theme.atmosphere.particles?.find(
-    (p) => p.kind === "sparkles",
-  );
+  // Every particle entry renders (kinds: sparkles, pollen-drift, snow, …).
   // Mobile + reduced-motion: fewer/frozen particles (spec §18).
-  const count = sparkles?.count ?? 60;
-  const scaledCount = compact ? Math.min(count, 30) : count;
+  const particles = theme.atmosphere.particles ?? [];
+  const scaled = (count: number) => (compact ? Math.min(count, 30) : count);
   const shadows = theme.atmosphere.effects?.some(
     (e) => e.kind === "contact-shadows" && e.enabled !== false,
   );
@@ -29,16 +27,18 @@ export function HomeAtmosphere({
   return (
     <>
       {fog && <fog attach="fog" args={[fog.color ?? "#0a0b10", fog.near ?? 4, fog.far ?? 12]} />}
-      {sparkles && !reducedMotion && (
-        <Sparkles
-          count={scaledCount}
-          scale={10}
-          size={sparkles.size ?? 2}
-          speed={sparkles.speed ?? 0.4}
-          opacity={sparkles.opacity ?? 0.5}
-          color={sparkles.color === "accent" ? accentColor : (sparkles.color ?? accentColor)}
-        />
-      )}
+      {!reducedMotion &&
+        particles.map((p, i) => (
+          <Sparkles
+            key={`${p.kind}-${i}`}
+            count={scaled(p.count ?? 40)}
+            scale={10}
+            size={p.size ?? 2}
+            speed={p.speed ?? 0.4}
+            opacity={p.opacity ?? 0.5}
+            color={p.color === "accent" ? accentColor : (p.color ?? accentColor)}
+          />
+        ))}
       {shadows !== false && (
         <ContactShadows
           position={[0, 0.01, 0]}

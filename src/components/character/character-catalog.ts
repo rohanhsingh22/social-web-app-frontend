@@ -4,6 +4,7 @@ import type {
   CharacterLoadout,
   ResolvedCharacter,
 } from "./character-types";
+import { validateLoadoutItems } from "./character-item-manifest";
 
 // Launch catalog: exactly two free characters (spec §5).
 // assetIds reuse the shipped GLBs so nothing breaks during migration.
@@ -36,19 +37,42 @@ function legacyGenderToCharacterId(gender: CharacterConfig["gender"]): string {
   return gender === "male" ? "character-02" : "character-01";
 }
 
+// Looks like a catalog item ID (never a raw hex color). Legacy configs store
+// colors (skinColor/hairColor/outfitColor) — those stay on the tint path in
+// CharacterModel and must NOT leak into the item loadout.
+function asItemId(value: unknown): string | undefined {
+  if (typeof value !== "string" || value === "") {
+    return undefined;
+  }
+  if (/^#[0-9a-fA-F]{3,8}$/.test(value)) {
+    return undefined;
+  }
+  return value;
+}
+
 function legacyConfigToLoadout(
   characterId: string,
   config: CharacterConfig,
 ): CharacterLoadout {
+  const raw = config as unknown as Record<string, unknown>;
   return {
     characterId,
-    // Colors ride along untouched — CharacterModel still tints from them.
-    // Item ids arrive later as event cosmetics ship.
-    skinId: config.skinColor,
-    hairId: config.hairColor,
-    outfitTopId: config.outfitColor,
-    accessoryIds: [],
-  } as unknown as CharacterLoadout;
+    skinId: asItemId(raw.skinId),
+    hairId: asItemId(raw.hairId),
+    outfitTopId: asItemId(raw.outfitTopId),
+    outfitBottomId: asItemId(raw.outfitBottomId),
+    fullOutfitId: asItemId(raw.fullOutfitId),
+    headwearId: asItemId(raw.headwearId),
+    eyewearId: asItemId(raw.eyewearId),
+    facewearId: asItemId(raw.facewearId),
+    footwearId: asItemId(raw.footwearId),
+    accessoryIds: Array.isArray(raw.accessoryIds)
+      ? (raw.accessoryIds as unknown[]).flatMap((id) => {
+          const item = asItemId(id);
+          return item ? [item] : [];
+        })
+      : [],
+  };
 }
 
 /**
@@ -78,12 +102,17 @@ export function resolveCharacter(
   }
   const definition = BY_ID.get(input.definitionId) ?? BY_ID.get("character-01")!;
   const raw = (input.loadout ?? {}) as Record<string, unknown>;
-  // Exclusive slots: full outfit wins over top/bottom (mirrors backend).
-  const loadout: CharacterLoadout = {
-    characterId: definition.id,
+  // Data-driven validation (Phase 3): unknown/cross-category/incompatible
+  // items drop with warnings, full outfit wins over top/bottom. Ownership
+  // stays server-side — the renderer only decides what is renderable.
+  const { loadout, warnings } = validateLoadoutItems(definition.id, {
+    ...raw,
     accessoryIds: Array.isArray(raw.accessoryIds)
       ? (raw.accessoryIds as string[])
       : [],
-  };
+  });
+  if (warnings.length > 0 && import.meta.env.DEV) {
+    console.warn(`[character-catalog] ${definition.id} warnings:`, warnings);
+  }
   return { definition, loadout };
 }

@@ -3,6 +3,11 @@ import { useGLTF } from "@react-three/drei";
 import type { HomeWorldTheme } from "./home-world-types";
 import { HomePodium } from "./HomePodium";
 import { HomeLobbySet } from "./HomeLobbySet";
+import { HomeVillageSet } from "./HomeVillageSet";
+
+// Set true when final environment GLBs land under public/hirotoli/home/.
+// Until then village geometry is fully procedural (no network fetch).
+const FINAL_ENV_MODELS_AVAILABLE = false;
 
 function EnvironmentModel({ url }: { url: string }) {
   const gltf = useGLTF(url);
@@ -15,14 +20,27 @@ function isLoadableModel(url: string | undefined): url is string {
   }
   // Only real fetchable model files reach the GLB loader — symbolic
   // scheme URLs (event://…) resolve to procedural props elsewhere.
-  return url.endsWith(".glb") || url.endsWith(".gltf");
+  if (!url.endsWith(".glb") && !url.endsWith(".gltf")) {
+    return false;
+  }
+  // Manifest refs under /hirotoli/ resolve procedurally until the final
+  // Quaternius GLBs are committed (Phase 1 approval) — never fetch a URL
+  // that cannot exist yet. Flip with the binaries, no other change needed.
+  if (url.startsWith("/hirotoli/") && !FINAL_ENV_MODELS_AVAILABLE) {
+    return false;
+  }
+  return true;
+}
+
+/** Rollback gate: the legacy lobby renders ONLY for the legacy theme id. */
+export function isLegacyWorld(theme: HomeWorldTheme): boolean {
+  return theme.id === "hirotoli-home-default";
 }
 
 // Environment: sky/background + real 3D world geometry + ground, all from
-// theme — the same idea as character GLBs. When the theme carries an
-// environmentModel URL it loads like any character model (useGLTF +
-// Suspense, cached by URL so only the active world ever downloads).
-// Otherwise the built-in procedural podium-lobby set renders.
+// theme — the same idea as character GLBs. hirotoli-village renders the
+// procedural village set (GLB environmentModel overrides when final assets
+// land); the legacy podium-lobby survives solely for rollback.
 export function HomeEnvironment({
   theme,
   accentColor,
@@ -38,16 +56,23 @@ export function HomeEnvironment({
   const modelUrl = theme.environment.environmentModel?.url;
   // Light twin shares all geometry — palette flips via the theme id.
   const light = theme.id.includes("light");
+  const legacy = isLegacyWorld(theme);
 
   return (
     <>
       {bgColor && <color attach="background" args={[bgColor]} />}
-      <HomePodium theme={theme} accentColor={accentColor} />
-      <HomeLobbySet
-        accentColor={accentColor}
-        reducedMotion={reducedMotion}
-        light={light}
-      />
+      {legacy ? (
+        <>
+          <HomePodium theme={theme} accentColor={accentColor} />
+          <HomeLobbySet
+            accentColor={accentColor}
+            reducedMotion={reducedMotion}
+            light={light}
+          />
+        </>
+      ) : (
+        <HomeVillageSet />
+      )}
       {isLoadableModel(modelUrl) && (
         <Suspense fallback={null}>
           <EnvironmentModel url={modelUrl} />

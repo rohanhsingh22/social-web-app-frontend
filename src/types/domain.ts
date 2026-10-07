@@ -348,6 +348,12 @@ export type HomeMember = {
   displayName: string;
   role: HomeMemberRole;
   presence: HomePresence;
+  // Server-authoritative identity signals for the character identity card
+  // (spec §22): never infer these from membership on the client. Absent on
+  // solo/legacy payloads — the card derives safe fallbacks.
+  isOwner?: boolean;
+  isSelf?: boolean;
+  connectionStatus?: string;
   // Null when the member never set a character — the renderer shows a
   // placeholder. Home-only by design; never add this to generic social
   // surfaces (backend spec #36).
@@ -374,6 +380,8 @@ export type HomeConnection = {
   presence: HomePresence;
   homeState: HomeConnectionState;
   homeMemberCount: number | null;
+  // Authoritative relationship state for the identity card (spec §22).
+  connectionStatus?: string;
 };
 
 export type HomeInvitationStatus =

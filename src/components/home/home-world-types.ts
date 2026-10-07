@@ -57,4 +57,10 @@ export type HomeThemeLayer = {
   atmosphere?: Partial<HomeWorldTheme["atmosphere"]>;
   decorations?: AssetRef[];
   audio?: HomeWorldTheme["audio"];
+  // Server timing (spec §20): the backend filters on these before sending,
+  // but local/edge layers carry them too — selectActiveLayers() enforces
+  // the same rule client-side as defense in depth. The server clock wins.
+  startsAt?: string | null;
+  endsAt?: string | null;
+  isActive?: boolean;
 };

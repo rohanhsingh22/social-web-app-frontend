@@ -108,6 +108,12 @@ function tintMaterial(
       color: { set: (color: string) => void };
     }
   ).color.set(color);
+  // Ownership flag for disposal (Phase 8): only flagged materials may be
+  // disposed on unmount. Unflagged materials are shared with the drei model
+  // cache and must survive. Geometries are always shared — never disposed.
+  (owned as unknown as { userData: Record<string, unknown> }).userData[
+    "hirotoliOwned"
+  ] = true;
   return owned;
 }
 

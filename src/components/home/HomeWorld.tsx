@@ -23,10 +23,12 @@ export function HomeWorld({
   children: ReactNode;
 }) {
   // Light twin shares all geometry — palette flips via the theme id.
+  // The world theme NEVER follows UI light/dark mode (spec §19).
   const light = theme.id.includes("light");
+  const village = theme.id === "hirotoli-village";
   return (
     <>
-      <HomeSky light={light} />
+      <HomeSky light={light} village={village} />
       <HomeEnvironment
         theme={theme}
         accentColor={accentColor}

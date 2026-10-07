@@ -12,16 +12,25 @@ export function HomeCharacter({
   position,
   scale,
   speaking = false,
+  onSelect,
 }: {
   member: HomeMember;
   position: CharacterPosition;
   scale: number;
   speaking?: boolean;
+  onSelect?: (member: HomeMember) => void;
 }) {
   const offline = member.presence === "offline";
 
   return (
-    <group position={position} scale={[scale, scale, scale]}>
+    <group
+      position={position}
+      scale={[scale, scale, scale]}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect?.(member);
+      }}
+    >
       <CharacterRenderer
         character={member.character ?? null}
         config={member.characterConfig ?? DEFAULT_CHARACTER_CONFIG}
@@ -35,7 +44,11 @@ export function HomeCharacter({
         </mesh>
       )}
       <Html position={[0, 2.6, 0]} center zIndexRange={[10, 0]}>
-        <HomeCharacterLabel member={member} speaking={speaking} />
+        <HomeCharacterLabel
+          member={member}
+          speaking={speaking}
+          onSelect={onSelect}
+        />
       </Html>
     </group>
   );

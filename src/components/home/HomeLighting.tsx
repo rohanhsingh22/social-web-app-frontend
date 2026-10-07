@@ -1,10 +1,14 @@
 import type { HomeWorldTheme } from "./home-world-types";
 
-// Lighting driven entirely by theme (spec §13). Defaults mirror the
-// current stage: soft ambient + warm key with shadow + cool fill.
+// Lighting driven entirely by theme (spec §13). The village sun is warm
+// daylight; legacy themes keep their stage looks. UI light/dark mode never
+// reaches here (spec §19).
 export function HomeLighting({ theme }: { theme: HomeWorldTheme }) {
   const dir = theme.lighting.directional;
   const light = theme.id.includes("light");
+  const village = theme.id === "hirotoli-village";
+  const hemiSky = village ? "#fff6e6" : light ? "#ffffff" : "#8ea2ff";
+  const hemiGround = village ? "#7a9a6a" : light ? "#b9c4da" : "#1a1c2e";
   return (
     <>
       <ambientLight
@@ -12,9 +16,7 @@ export function HomeLighting({ theme }: { theme: HomeWorldTheme }) {
         color={theme.lighting.ambient.color ?? "#ffffff"}
       />
       {/* Soft sky/ground fill so structures read in both modes */}
-      <hemisphereLight
-        args={light ? ["#ffffff", "#b9c4da", 0.6] : ["#8ea2ff", "#1a1c2e", 0.5]}
-      />
+      <hemisphereLight args={[hemiSky, hemiGround, village ? 0.55 : 0.5]} />
       <directionalLight
         position={dir?.position ?? [4, 8, 5]}
         intensity={dir?.intensity ?? 1.6}
@@ -27,8 +29,8 @@ export function HomeLighting({ theme }: { theme: HomeWorldTheme }) {
       {/* Cool back-rim so pillars/walls separate from the backdrop */}
       <directionalLight
         position={[0, 5, -6]}
-        intensity={light ? 0.5 : 0.9}
-        color={light ? "#93c5fd" : "#7dd3fc"}
+        intensity={village ? 0.4 : light ? 0.5 : 0.9}
+        color={village ? "#bfe3f0" : light ? "#93c5fd" : "#7dd3fc"}
       />
       {theme.lighting.pointLights?.map((light, i) => (
         <pointLight

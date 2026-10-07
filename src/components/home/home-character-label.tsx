@@ -7,9 +7,11 @@ import { cn } from "@/lib/utils";
 export function HomeCharacterLabel({
   member,
   speaking = false,
+  onSelect,
 }: {
   member: HomeMember;
   speaking?: boolean;
+  onSelect?: (member: HomeMember) => void;
 }) {
   const offline = member.presence === "offline";
   const initial = member.displayName.trim().charAt(0).toUpperCase() || "?";
@@ -34,9 +36,14 @@ export function HomeCharacterLabel({
         {initial}
       </span>
       <span className="flex max-w-28 items-center gap-1 rounded-full border border-line bg-surface/90 px-2 py-0.5 backdrop-blur">
-        <span className="truncate text-xs font-semibold text-ink">
+        <button
+          type="button"
+          onClick={() => onSelect?.(member)}
+          aria-haspopup="dialog"
+          className="truncate text-xs font-semibold text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-brand"
+        >
           {member.displayName}
-        </span>
+        </button>
         {member.role === "OWNER" && (
           <span
             title="Home owner"

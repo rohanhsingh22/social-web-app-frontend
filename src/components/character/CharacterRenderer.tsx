@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER_CONFIG, type CharacterConfig } from "@/types/domain";
-import { CharacterModel } from "./character-model";
+import { CharacterModelBoundary } from "./character-model-boundary";
 import { CharacterEquipment } from "./CharacterEquipment";
 import { resolveCharacter } from "./character-catalog";
 import type {
@@ -43,8 +43,9 @@ export function CharacterRenderer({
 
   return (
     <group ref={animRef} position={[0, 0, 0]}>
-      <CharacterModel
+      <CharacterModelBoundary
         key={resolved.definition.id}
+        characterId={resolved.definition.id}
         config={{ ...DEFAULT_CHARACTER_CONFIG, ...tint }}
         position={position}
         scale={scale}

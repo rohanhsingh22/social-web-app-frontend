@@ -15,8 +15,18 @@ export type CharacterDefinition = {
   unlock: CharacterUnlock;
 };
 
-export type CharacterLoadout = {
-  characterId: string;
+export type CharacterItemCategory =
+  | "hair"
+  | "outfit_top"
+  | "outfit_bottom"
+  | "full_outfit"
+  | "headwear"
+  | "eyewear"
+  | "facewear"
+  | "footwear"
+  | "accessory";
+
+export type CharacterLoadout = {  characterId: string;
   skinId?: string;
   hairId?: string;
   outfitTopId?: string;

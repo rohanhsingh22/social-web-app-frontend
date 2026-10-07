@@ -1,0 +1,15 @@
+Hirotoli asset license record (spec §13)
+========================================
+
+asset name: Quaternius Fantasy Props MegaKit + Stylized Nature MegaKit (candidate subset)
+creator: Quaternius
+source URL (props): https://quaternius.itch.io/fantasy-props-megakit
+source URL (nature): https://quaternius.itch.io/stylized-nature-megakit
+download/version date: 2026-10-07 (candidate review; NOT yet shipped)
+license: Creative Commons Zero v1.0 Universal (CC0) — verified live on both source pages 2026-10-07 ("Asset license: Creative Commons Zero v1.0 Universal")
+license URL: https://creativecommons.org/publicdomain/zero/1.0/
+asset version: Props Standard zip 143 MB (200+ models, 4 shared texture sets); Nature Standard zip 99 MB (116 models: 40 trees, 35 plants/flowers, 27 rocks). Pin exact versions at download.
+where used: future /hirotoli/home/props/* and /hirotoli/home/nature/* (benches, lanterns, market props, trees, bushes/flowers, rocks; pending Phase 1 approval). Ship only subset needed for Home scene.
+whether modified: no (evaluation only)
+whether redistributed: no (not committed)
+notes: Candidates per spec §12. Props: avoid weapons/tools-as-weapons; use benches/barrels/crates/signs/lamps/market/decor only. Nature: Ghibli-inspired stylized look matches character aesthetic. Keep vegetation density controlled; lazy-load nonessential props. Release gate: re-verify license at commit time; do not mix incompatible licenses.

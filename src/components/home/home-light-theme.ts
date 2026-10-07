@@ -1,8 +1,9 @@
 import type { HomeWorldTheme } from "./home-world-types";
 
-// Light-mode twin of the default podium-lobby (world v2). Same geometry
-// and layout as the dark default — only the palette and lighting change,
-// so switching UI modes never moves the characters or camera.
+// @deprecated Rollback-only twin of the retired podium-lobby (spec §19:
+// UI color mode must not select the 3D world). Kept until hirotoli-village
+// passes production validation, then removed. Not referenced by any default
+// path — HomeEnvironment renders the lobby solely for the legacy theme id.
 export const LIGHT_HIROTOLI_WORLD: HomeWorldTheme = {
   id: "hirotoli-home-default-light",
   name: "Hirotoli Home Light",

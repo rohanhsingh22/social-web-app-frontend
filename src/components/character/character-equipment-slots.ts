@@ -32,6 +32,47 @@ export const SOCKET_OFFSETS = {
   faceFront: { position: [0, 1.6, 0.17] as [number, number, number] },
 } as const;
 
+export type SocketName = keyof typeof SOCKET_OFFSETS;
+
+// Task 4 — bone fallback map. Until equipment ships with real bone-bound
+// GLBs, bone-anchored items mount at the nearest socket approximation so
+// they stay visible instead of vanishing. Headwear bones ride the head,
+// face bones ride the face, everything else defaults to headTop.
+const BONE_TO_SOCKET: Record<string, SocketName> = {
+  Head: "headTop",
+  Neck: "faceFront",
+  Hips: "headTop",
+  Spine: "headTop",
+};
+
+export type AttachmentPlacement =
+  | { kind: "body" }
+  | { kind: "socket"; name: SocketName; position: [number, number, number] };
+
+/**
+ * Tasks 3+4 — resolve an attachment descriptor to a render placement.
+ * skinned → follows the body (no offset). socket → named offset, unknown
+ * names fall back to headTop. bone → nearest-socket approximation.
+ * Never throws; unknown descriptors follow the body.
+ */
+export function placementForAttachment(
+  attachment: AttachmentPoint,
+): AttachmentPlacement {
+  if (attachment.type === "skinned") {
+    return { kind: "body" };
+  }
+  if (attachment.type === "socket") {
+    const name = (Object.keys(SOCKET_OFFSETS) as SocketName[]).includes(
+      attachment.socketName as SocketName,
+    )
+      ? (attachment.socketName as SocketName)
+      : "headTop";
+    return { kind: "socket", name, position: SOCKET_OFFSETS[name].position };
+  }
+  const name = BONE_TO_SOCKET[attachment.boneName] ?? "headTop";
+  return { kind: "socket", name, position: SOCKET_OFFSETS[name].position };
+}
+
 export function validateEquipmentSlots(
   equipped: Partial<Record<EquipmentSlot, string>>,
 ): string | null {
